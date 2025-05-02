@@ -1,0 +1,70 @@
+<!-- templates/my_bids.html -->
+{% extends 'base.html' %}
+
+{% block title %}My Bids - NHL Game Moment Auctions{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>My Bids</h2>
+            <p class="lead">Track your current bids and auction status</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ game.away_team }} @ {{ game.home_team }} - {{ game.date }}</h5>
+        </div>
+        <div class="card-body">
+            {% if bids %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Auction Moment</th>
+                                <th>Your Bid</th>
+                                <th>Current Highest Bid</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bid in bids %}
+                                {% set auction = auction_moments|selectattr('id', 'eq', bid.auction_id)|first %}
+                                <tr>
+                                    <td>{{ bid.auction_name }}</td>
+                                    <td>${{ "{:,}".format(bid.amount) }}</td>
+                                    <td>${{ "{:,}".format(auction.current_bid) }}</td>
+                                    <td>
+                                        {% if bid.amount == auction.current_bid %}
+                                            <span class="badge bg-success">Winning</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Outbid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('auction_detail', auction_id=bid.auction_id) }}" class="btn btn-sm btn-primary">View</a>
+                                        {% if bid.amount < auction.current_bid %}
+                                            <a href="{{ url_for('place_bid', auction_id=bid.auction_id) }}" class="btn btn-sm btn-warning">Rebid</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <h5>You haven't placed any bids yet</h5>
+                    <p>Browse auction opportunities on your dashboard to get started.</p>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">View Auctions</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

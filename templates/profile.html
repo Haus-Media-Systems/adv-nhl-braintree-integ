@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>My Profile</h1>
+            <p class="lead">Manage your account information and budget</p>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-wallet fa-3x"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Available Budget</h6>
+                            <h2 class="mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Information Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-circle me-2 text-white"></i>Account Information</h4>
+                </div>
+                <div class="card-body">
+                    <form id="profile-form" action="{{ url_for('update_profile') }}" method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="company" class="form-label">Company</label>
+                            <input type="text" class="form-control" id="company" name="company" value="{{ user.company }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.get('phone', '') }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Management Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-money-bill-wave me-2 text-white"></i>Budget Management</h4>
+                </div>
+                <div class="card-body">
+                    <div class="budget-summary mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted">Total Budget</h6>
+                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.total_budget) }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted">In Use</h6>
+                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.used_budget) }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted">Available</h6>
+                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5>Add Funds</h5>
+                    <div class="mb-4">
+                        <div class="form-group mb-3">
+                            <label for="amount" class="form-label">Amount to Add</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount" placeholder="0.00" min="100" step="100">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-success mb-3" onclick="showBankLinkMessage()">
+                            <i class="fas fa-plus-circle me-1"></i> Add Funds
+                        </button>
+                        <button type="button" class="btn btn-outline-danger mb-3" onclick="showBankLinkMessage()">
+                            <i class="fas fa-minus-circle me-1"></i> Withdraw Funds
+                        </button>
+                    </div>
+
+                    <h5>Connected Accounts</h5>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-primary" onclick="showBankLinkMessage()">
+                            <i class="fas fa-university me-1"></i> Link Bank Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bidding History Section -->
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-history me-2 text-white"></i>Bidding History</h4>
+                </div>
+                <div class="card-body">
+                    {% if user_strategies|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Game</th>
+                                        <th>Moment</th>
+                                        <th>Bid Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for strategy_id, strategy in user_strategies.items() %}
+                                    <tr>
+                                        <td>{{ strategy.get('date_created', 'N/A') }}</td>
+                                        <td>
+                                            {% for g in upcoming_games %}
+                                                {% if g.id == strategy.game_id %}
+                                                    {{ g.away }} @ {{ g.home }}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% set moment_id_str = strategy.moment_id|string %}
+                                            {% if moment_id_str in moments %}
+                                                {{ moments[moment_id_str].name }}
+                                            {% elif strategy.moment_id in moments %}
+                                                {{ moments[strategy.moment_id].name }}
+                                            {% else %}
+                                                Unknown Moment
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "{:,.2f}".format(strategy.max_bid) }}</td>
+                                        <td>
+                                            {% if strategy.get('status') == 'inactive' %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <h5>No Bidding History</h5>
+                            <p class="text-muted">You haven't set up any bidding strategies yet.</p>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">Create Your First Strategy</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bank Link Modal -->
+<div class="modal fade" id="bankLinkModal" tabindex="-1" aria-labelledby="bankLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bankLinkModalLabel">Bank Account Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-university fa-4x text-muted mb-3"></i>
+                    <h5>Cannot Link to External Bank Account at this Time</h5>
+                    <p class="text-muted">This feature is currently under development. Please check back later.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showBankLinkMessage() {
+        var myModal = new bootstrap.Modal(document.getElementById('bankLinkModal'));
+        myModal.show();
+    }
+</script>
+{% endblock %}

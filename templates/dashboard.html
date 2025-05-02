@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="py-5 bg-primary text-white" style="background-image: url('https://images.unsplash.com/photo-1580891034393-96dd08479cff?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80'); background-size: cover; background-position: center; background-blend-mode: overlay;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <h1 class="display-4 fw-bold">Welcome, {{ user.name }}</h1>
+                <p class="lead">{{ user.company }}</p>
+                <p>Your premium instant replay bidding platform for NHL games</p>
+            </div>
+            <div class="col-md-5">
+                <div class="card bg-light border-0 shadow-lg">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-wallet fa-3x text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-0">Available Budget</h6>
+                                <h2 class="text-primary mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Section -->
+<div class="py-4 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle bg-primary text-white mb-3">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <h5>Active Strategies</h5>
+                        <h3 class="text-primary">
+                            {% if user_strategies is defined %}
+                                {{ user_strategies|length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle bg-success text-white mb-3">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <h5>Upcoming Games</h5>
+                        <h3 class="text-success">{{ upcoming_games|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle bg-info text-white mb-3">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h5>Bids Won</h5>
+                        <h3 class="text-info">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle bg-warning text-white mb-3">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5>Audience Reach</h5>
+                        <h3 class="text-warning">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Upcoming Games Section -->
+    <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h2 class="mb-0"><i class="fas fa-hockey-puck text-primary me-2"></i> Upcoming Games</h2>
+            <a href="#" class="btn btn-outline-primary btn-sm">View All Games</a>
+        </div>
+
+        <div class="row">
+            {% for game in upcoming_games %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-header bg-primary text-white">
+                        <span class="float-end badge bg-light text-dark">{{ game.date }}</span>
+                        <h5 class="mb-0">{{ game.time }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center text-center mb-3">
+                            <div class="col-5">
+                                <div class="team-logo mb-2">
+                                    <!-- Replace with actual team logos if available -->
+                                    <i class="fas fa-shield-alt fa-3x team-icon-{{ game.away.split(' ')|last|lower }}"></i>
+                                </div>
+                                <h6>{{ game.away }}</h6>
+                            </div>
+                            <div class="col-2">
+                                <span class="text-muted">VS</span>
+                            </div>
+                            <div class="col-5">
+                                <div class="team-logo mb-2">
+                                    <!-- Replace with actual team logos if available -->
+                                    <i class="fas fa-shield-alt fa-3x team-icon-{{ game.home.split(' ')|last|lower }}"></i>
+                                </div>
+                                <h6>{{ game.home }}</h6>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-3">
+                            <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-primary">
+                                <i class="fas fa-eye me-1"></i> View Game Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Available Moments Section -->
+    <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h2 class="mb-0"><i class="fas fa-star text-primary me-2"></i> Available Moment Types</h2>
+            <a href="#" class="btn btn-outline-primary btn-sm">Learn More</a>
+        </div>
+
+        <div class="row">
+            {% for id, moment in moments.items() %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <!-- Moment-specific icon -->
+                            {% if moment.name == "Goal" %}
+                                <i class="fas fa-hockey-puck fa-2x me-2 text-danger"></i>
+                            {% elif moment.name == "Save" %}
+                                <i class="fas fa-hand-paper fa-2x me-2 text-primary"></i>
+                            {% elif moment.name == "Penalty" %}
+                                <i class="fas fa-flag fa-2x me-2 text-warning"></i>
+                            {% elif moment.name == "Fight" %}
+                                <i class="fas fa-fist-raised fa-2x me-2 text-danger"></i>
+                            {% elif moment.name == "Overtime Goal/Shootout" %}
+                                <i class="fas fa-stopwatch fa-2x me-2 text-success"></i>
+                            {% elif moment.name == "Hit" %}
+                                <i class="fas fa-bolt fa-2x me-2 text-info"></i>
+                            {% else %}
+                                <i class="fas fa-star fa-2x me-2 text-primary"></i>
+                            {% endif %}
+                            <h5 class="mb-0">{{ moment.name }}</h5>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">{{ moment.description }}</p>
+
+                        <div class="row mb-3">
+                            <div class="col-4 text-center">
+                                <div class="stat-circle bg-light">
+                                    <i class="fas fa-eye text-primary"></i>
+                                </div>
+                                <p class="stat-label">Exposure</p>
+                                <p class="badge bg-primary">{{ moment.exposure }}</p>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="stat-circle bg-light">
+                                    <i class="fas fa-dollar-sign text-success"></i>
+                                </div>
+                                <p class="stat-label">Avg Bid</p>
+                                <p class="badge bg-success">{{ moment.avg_bid }}</p>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="stat-circle bg-light">
+                                    <i class="fas fa-redo text-info"></i>
+                                </div>
+                                <p class="stat-label">Frequency</p>
+                                <p class="badge bg-info">{{ moment.frequency }}</p>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            {% if user_strategies is defined %}
+                                {% set has_strategy = false %}
+                                {% for s_id, strategy in user_strategies.items() %}
+                                    {% if strategy.moment_id == id|int %}
+                                        {% set has_strategy = true %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if has_strategy %}
+                                    <a href="{{ url_for('setup_strategy', moment_id=id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i> Edit Bidding Strategy
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('moment_detail', moment_id=id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-info-circle me-1"></i> View Moment Details
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('moment_detail', moment_id=id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-info-circle me-1"></i> View Moment Details
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- My Strategies Section -->
+    <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h2 class="mb-0"><i class="fas fa-tasks text-primary me-2"></i> My Active Strategies</h2>
+            <a href="{{ url_for('my_strategies') }}" class="btn btn-primary btn-sm">Manage All Strategies</a>
+        </div>
+
+        {% if user_strategies is defined and user_strategies|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover border">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Game</th>
+                            <th>Moment</th>
+                            <th>Bid Range</th>
+                            <th>Focus</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for strategy_id, strategy in user_strategies.items() %}
+                            <tr id="strategy-row-{{ strategy_id }}" class="strategy-row {% if strategy.get('status') == 'inactive' %}inactive{% else %}active{% endif %}">
+                                <td>
+                                    {% if strategy.game_id %}
+                                        {% set game = None %}
+                                        {% for g in upcoming_games %}
+                                            {% if g.id == strategy.game_id %}
+                                                {% set game = g %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if game %}
+                                            {{ game.away }} @ {{ game.home }}<br>
+                                            <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
+                                        {% else %}
+                                            Unknown Game
+                                        {% endif %}
+                                    {% else %}
+                                        Unknown Game
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if strategy.moment_id %}
+                                        {% if moments[strategy.moment_id|string] %}
+                                            {{ moments[strategy.moment_id|string].name }}
+                                        {% else %}
+                                            Unknown Moment
+                                        {% endif %}
+                                    {% else %}
+                                        Unknown Moment
+                                    {% endif %}
+                                </td>
+                                <td>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</td>
+                                <td>
+                                    {% if strategy.team_focus == 'both' %}
+                                        Both Teams
+                                    {% elif strategy.team_focus == 'home' %}
+                                        Home Team
+                                    {% elif strategy.team_focus == 'away' %}
+                                        Away Team
+                                    {% endif %}
+
+                                    {% if strategy.player_focus %}
+                                        <br><small>{{ strategy.player_focus }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if strategy.get('status') == 'inactive' %}bg-secondary{% else %}bg-success{% endif %}">
+                                        {% if strategy.get('status') == 'inactive' %}Inactive{% else %}Active{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('setup_strategy', moment_id=strategy.moment_id, game_id=strategy.game_id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger toggle-status-btn"
+                                                data-strategy-id="{{ strategy_id }}"
+                                                data-action="{% if strategy.get('status') == 'inactive' %}unpause{% else %}pause{% endif %}">
+                                            {% if strategy.get('status') == 'inactive' %}Unpause{% else %}Pause{% endif %}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5 border rounded bg-light">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5>No Active Strategies</h5>
+                <p class="text-muted">You haven't created any bidding strategies yet.</p>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Create Your First Strategy
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CSS for custom styling -->
+<style>
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        font-size: 24px;
+    }
+
+    .hover-card {
+        transition: transform 0.3s;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+
+    .team-logo {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .stat-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        font-size: 16px;
+        border: 2px solid #eee;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+
+    /* Team-specific colors */
+    .team-icon-rangers { color: #0033A0; }
+    .team-icon-bruins { color: #FFB81C; }
+    .team-icon-leafs { color: #00205B; }
+    .team-icon-canadiens { color: #AF1E2D; }
+    .team-icon-oilers { color: #FF4C00; }
+    .team-icon-flames { color: #C8102E; }
+
+    /* Strategy row styling */
+    .strategy-row.inactive {
+        opacity: 0.6;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<!-- Script for toggle buttons -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all toggle status buttons
+    const toggleButtons = document.querySelectorAll('.toggle-status-btn');
+
+    // Add click event listener to each button
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const strategyId = this.getAttribute('data-strategy-id');
+            const currentAction = this.getAttribute('data-action');
+            const row = document.getElementById(`strategy-row-${strategyId}`);
+            const statusBadge = row.querySelector('.badge');
+
+            // Determine new status based on current action
+            const newStatus = currentAction === 'pause' ? 'inactive' : 'active';
+
+            // Call the API to update status
+            fetch('/api/toggle_strategy_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    strategy_id: strategyId,
+                    status: newStatus
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Toggle button text and action
+                    if (currentAction === 'pause') {
+                        // Change to inactive
+                        this.setAttribute('data-action', 'unpause');
+                        this.textContent = 'Unpause';
+                        row.classList.remove('active');
+                        row.classList.add('inactive');
+                        statusBadge.textContent = 'Inactive';
+                        statusBadge.classList.remove('bg-success');
+                        statusBadge.classList.add('bg-secondary');
+                    } else {
+                        // Change to active
+                        this.setAttribute('data-action', 'pause');
+                        this.textContent = 'Pause';
+                        row.classList.remove('inactive');
+                        row.classList.add('active');
+                        statusBadge.textContent = 'Active';
+                        statusBadge.classList.remove('bg-secondary');
+                        statusBadge.classList.add('bg-success');
+                    }
+                    console.log(`Strategy ${strategyId} status updated to ${newStatus}`);
+                } else {
+                    console.error('Failed to update strategy status');
+                    alert('Failed to update strategy status. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the strategy status.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

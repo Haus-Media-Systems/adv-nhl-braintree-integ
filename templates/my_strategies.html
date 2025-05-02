@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bidding Strategies - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>My Bidding Strategies</h1>
+        <p class="lead">Manage your automated bidding strategies for NHL game moments</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Active Strategies</h4>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Create New Strategy
+                </a>
+            </div>
+            <div class="card-body">
+                {% if strategies|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Game</th>
+                                    <th>Moment</th>
+                                    <th>Bid Range</th>
+                                    <th>Focus</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="strategies-table-body">
+                                {% for strategy_id, strategy in strategies.items() %}
+                                    <tr id="strategy-row-{{ strategy_id }}" class="strategy-row {% if strategy.get('status') == 'inactive' %}inactive{% else %}active{% endif %}">
+                                        <td>
+                                            {% if strategy.game %}
+                                                {{ strategy.game.away }} @ {{ strategy.game.home }}<br>
+                                                <small class="text-muted">{{ strategy.game.date }} | {{ strategy.game.time }}</small>
+                                            {% else %}
+                                                Unknown Game
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if strategy.moment %}
+                                                {{ strategy.moment.name }}
+                                            {% else %}
+                                                Unknown Moment
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</td>
+                                        <td>
+                                            {% if strategy.team_focus == 'both' %}
+                                                Both Teams
+                                            {% elif strategy.team_focus == 'home' %}
+                                                Home Team
+                                            {% elif strategy.team_focus == 'away' %}
+                                                Away Team
+                                            {% endif %}
+
+                                            {% if strategy.player_focus %}
+                                                <br><small>{{ strategy.player_focus }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ strategy.date_created }}</td>
+                                        <td>
+                                            <span class="badge {% if strategy.get('status') == 'inactive' %}bg-secondary{% else %}bg-success{% endif %} status-badge">
+                                                {% if strategy.get('status') == 'inactive' %}Inactive{% else %}Active{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('setup_strategy', moment_id=strategy.moment_id) }}?game_id={{ strategy.game_id }}"
+                                                   class="btn btn-sm btn-outline-primary edit-btn">Edit</a>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger toggle-status-btn"
+                                                        data-strategy-id="{{ strategy_id }}"
+                                                        data-action="{% if strategy.get('status') == 'inactive' %}unpause{% else %}pause{% endif %}">
+                                                    {% if strategy.get('status') == 'inactive' %}Unpause{% else %}Pause{% endif %}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-hockey-puck fa-3x text-muted mb-3"></i>
+                        <h5>No Bidding Strategies Yet</h5>
+                        <p>You haven't created any automated bidding strategies yet.</p>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus me-1"></i> Create Your First Strategy
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if strategies|length > 0 %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Budget Allocation</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Current Budget: ${{ "{:,.0f}".format(user['available_budget']) }}</h5>
+                    <div class="progress" style="height: 24px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 45%;" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">$45,000 Committed</div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 55%;" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100">$55,000 Available</div>
+                    </div>
+                </div>
+
+                <h6>Distribution by Moment Type</h6>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Goals</span>
+                        <span>$13,500 (30%)</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 30%;" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Overtime/Shootout Goals</span>
+                        <span>$9,000 (20%)</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Saves</span>
+                        <span>$9,000 (20%)</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Penalties</span>
+                        <span>$6,750 (15%)</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 15%;" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Fights & Hits</span>
+                        <span>$6,750 (15%)</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 15%;" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Upcoming Events</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Boston Bruins @ New York Rangers</h5>
+                            <small>Tomorrow</small>
+                        </div>
+                        <p class="mb-1">You have 2 active strategies for this game</p>
+                        <small>19:00 EST</small>
+                    </div>
+
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Toronto Maple Leafs @ Montreal Canadiens</h5>
+                            <small>In 2 days</small>
+                        </div>
+                        <p class="mb-1">You have 1 active strategy for this game</p>
+                        <small>20:00 EST</small>
+                    </div>
+
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Edmonton Oilers @ Calgary Flames</h5>
+                            <small>In 3 days</small>
+                        </div>
+                        <p class="mb-1">You have 2 active strategies for this game</p>
+                        <small>21:00 MST</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-calendar-alt me-2"></i> Upcoming games with your strategies</span>
+                    <a href="#" class="btn btn-sm btn-outline-primary">View Full Calendar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Past Performance</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Detailed performance analytics will appear here once your strategies have been active for games.
+                </div>
+
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <h5>No Historical Data Yet</h5>
+                    <p>Performance metrics will be available after your first game with active strategies.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Add these styles to your CSS */
+.strategy-row.inactive {
+    opacity: 0.6;
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all toggle status buttons
+    const toggleButtons = document.querySelectorAll('.toggle-status-btn');
+
+    // Add click event listener to each button
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const strategyId = this.getAttribute('data-strategy-id');
+            const currentAction = this.getAttribute('data-action');
+            const row = document.getElementById(`strategy-row-${strategyId}`);
+            const statusBadge = row.querySelector('.status-badge');
+            
+            // Determine new status based on current action
+            const newStatus = currentAction === 'pause' ? 'inactive' : 'active';
+            
+            // Call the API to update status
+            fetch('/api/toggle_strategy_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    strategy_id: strategyId,
+                    status: newStatus
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Toggle button text and action
+                    if (currentAction === 'pause') {
+                        // Change to inactive
+                        this.setAttribute('data-action', 'unpause');
+                        this.textContent = 'Unpause';
+                        row.classList.remove('active');
+                        row.classList.add('inactive');
+                        statusBadge.textContent = 'Inactive';
+                        statusBadge.classList.remove('bg-success');
+                        statusBadge.classList.add('bg-secondary');
+                    } else {
+                        // Change to active
+                        this.setAttribute('data-action', 'pause');
+                        this.textContent = 'Pause';
+                        row.classList.remove('inactive');
+                        row.classList.add('active');
+                        statusBadge.textContent = 'Active';
+                        statusBadge.classList.remove('bg-secondary');
+                        statusBadge.classList.add('bg-success');
+                    }
+                    console.log(`Strategy ${strategyId} status updated to ${newStatus}`);
+                } else {
+                    console.error('Failed to update strategy status');
+                    alert('Failed to update strategy status. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the strategy status.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

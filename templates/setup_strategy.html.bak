@@ -1,0 +1,676 @@
+{% extends 'base.html' %}
+
+{% block title %}Set Up Bidding Strategy - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}{% endblock %}
+
+<!-- Player Selection Modal -->
+<div class="modal fade" id="playerSelectionModal" tabindex="-1" aria-labelledby="playerSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="playerSelectionModalLabel">Select Players for Bidding Strategy</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="playerSearchInput" placeholder="Search by player name...">
+                            <button class="btn btn-outline-secondary" type="button" id="searchPlayerBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="positionFilter">
+                            <option value="all">All Positions</option>
+                            <option value="C">Center</option>
+                            <option value="LW">Left Wing</option>
+                            <option value="RW">Right Wing</option>
+                            <option value="D">Defense</option>
+                            <option value="G">Goalie</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="teamFilter">
+                            <option value="all">All Teams</option>
+                            <option value="NYR">New York Rangers</option>
+                            <option value="BOS">Boston Bruins</option>
+                            <option value="TOR">Toronto Maple Leafs</option>
+                            <option value="MTL">Montreal Canadiens</option>
+                            <option value="EDM">Edmonton Oilers</option>
+                            <option value="CGY">Calgary Flames</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Available Players</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="playersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Team</th>
+                                                <th>Pos</th>
+                                                <th>#</th>
+                                                <th>Stats</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- NYR Players -->
+                                            <tr data-player-id="NYR-1" data-team="NYR" data-position="G">
+                                                <td>Igor Shesterkin</td>
+                                                <td>NYR</td>
+                                                <td>G</td>
+                                                <td>31</td>
+                                                <td>GAA: 2.48, SV%: .916, SO: 3</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            <tr data-player-id="NYR-2" data-team="NYR" data-position="LW">
+                                                <td>Artemi Panarin</td>
+                                                <td>NYR</td>
+                                                <td>LW</td>
+                                                <td>10</td>
+                                                <td>32 G, 47 A, 79 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            <tr data-player-id="NYR-3" data-team="NYR" data-position="C">
+                                                <td>Mika Zibanejad</td>
+                                                <td>NYR</td>
+                                                <td>C</td>
+                                                <td>93</td>
+                                                <td>28 G, 39 A, 67 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            
+                                            <!-- BOS Players -->
+                                            <tr data-player-id="BOS-1" data-team="BOS" data-position="G">
+                                                <td>Jeremy Swayman</td>
+                                                <td>BOS</td>
+                                                <td>G</td>
+                                                <td>1</td>
+                                                <td>GAA: 2.32, SV%: .921, SO: 4</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            <tr data-player-id="BOS-2" data-team="BOS" data-position="RW">
+                                                <td>David Pastrnak</td>
+                                                <td>BOS</td>
+                                                <td>RW</td>
+                                                <td>88</td>
+                                                <td>43 G, 38 A, 81 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            
+                                            <!-- TOR Players -->
+                                            <tr data-player-id="TOR-1" data-team="TOR" data-position="C">
+                                                <td>Auston Matthews</td>
+                                                <td>TOR</td>
+                                                <td>C</td>
+                                                <td>34</td>
+                                                <td>51 G, 27 A, 78 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            <tr data-player-id="TOR-2" data-team="TOR" data-position="RW">
+                                                <td>Mitch Marner</td>
+                                                <td>TOR</td>
+                                                <td>RW</td>
+                                                <td>16</td>
+                                                <td>27 G, 53 A, 80 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            
+                                            <!-- MTL Players -->
+                                            <tr data-player-id="MTL-1" data-team="MTL" data-position="RW">
+                                                <td>Cole Caufield</td>
+                                                <td>MTL</td>
+                                                <td>RW</td>
+                                                <td>22</td>
+                                                <td>26 G, 20 A, 46 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            
+                                            <!-- EDM Players -->
+                                            <tr data-player-id="EDM-1" data-team="EDM" data-position="C">
+                                                <td>Connor McDavid</td>
+                                                <td>EDM</td>
+                                                <td>C</td>
+                                                <td>97</td>
+                                                <td>42 G, 66 A, 108 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            <tr data-player-id="EDM-2" data-team="EDM" data-position="C">
+                                                <td>Leon Draisaitl</td>
+                                                <td>EDM</td>
+                                                <td>C</td>
+                                                <td>29</td>
+                                                <td>38 G, 58 A, 96 PTS</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                            
+                                            <!-- CGY Players -->
+                                            <tr data-player-id="CGY-1" data-team="CGY" data-position="G">
+                                                <td>Jacob Markstrom</td>
+                                                <td>CGY</td>
+                                                <td>G</td>
+                                                <td>25</td>
+                                                <td>GAA: 2.75, SV%: .911, SO: 2</td>
+                                                <td><button class="btn btn-sm btn-primary add-player-btn"><i class="fas fa-plus"></i></button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">Selected Players</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="selectedPlayersContainer">
+                                    <p id="noPlayersMessage" class="text-muted">No players selected. Click the "+" button to add players.</p>
+                                    <ul id="selectedPlayersList" class="list-group mb-3">
+                                        <!-- Selected players will be listed here -->
+                                    </ul>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Bidding will only trigger for moments involving your selected players.
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-success" id="confirmPlayerSelection">
+                                        <i class="fas fa-check me-1"></i> Confirm Selection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Simple script to update the strategy summary in real-time
+    document.addEventListener('DOMContentLoaded', function() {
+        // Game selection
+        const gameSelect = document.getElementById('game_id');
+        const summaryGame = document.getElementById('summary-game');
+        
+        if (gameSelect) {
+            gameSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                summaryGame.textContent = selectedOption.text || 'Not selected';
+            });
+        }
+        
+        // Base bid
+        const baseBidInput = document.getElementById('base_bid');
+        const summaryBaseBid = document.getElementById('summary-base-bid');
+        
+        if (baseBidInput && summaryBaseBid) {
+            baseBidInput.addEventListener('input', function() {
+                summaryBaseBid.textContent = Number(this.value).toLocaleString();
+            });
+        }
+        
+        // Max bid
+        const maxBidInput = document.getElementById('max_bid');
+        const summaryMaxBid = document.getElementById('summary-max-bid');
+        
+        if (maxBidInput && summaryMaxBid) {
+            maxBidInput.addEventListener('input', function() {
+                summaryMaxBid.textContent = Number(this.value).toLocaleString();
+            });
+        }
+        
+        // Team focus
+        const teamFocusSelect = document.getElementById('team_focus');
+        const summaryTeam = document.getElementById('summary-team');
+        
+        if (teamFocusSelect && summaryTeam) {
+            teamFocusSelect.addEventListener('change', function() {
+                const teamMap = {
+                    'both': 'Both Teams',
+                    'home': 'Home Team Only',
+                    'away': 'Away Team Only'
+                };
+                summaryTeam.textContent = teamMap[this.value] || 'Both Teams';
+            });
+        }
+        
+        // Player focus
+        const playerFocusInput = document.getElementById('player_focus');
+        const summaryPlayer = document.getElementById('summary-player');
+        
+        if (playerFocusInput && summaryPlayer) {
+            playerFocusInput.addEventListener('input', function() {
+                summaryPlayer.textContent = this.value.trim() || 'All Players';
+            });
+        }
+        
+        // Period restrictions
+        const periodRestrictionsSelect = document.getElementById('period_restrictions');
+        const summaryPeriods = document.getElementById('summary-periods');
+        
+        if (periodRestrictionsSelect && summaryPeriods) {
+            periodRestrictionsSelect.addEventListener('change', function() {
+                const periodMap = {
+                    '': 'All Periods',
+                    '1': '1st Period Only',
+                    '2': '2nd Period Only',
+                    '3': '3rd Period Only',
+                    '1,2': '1st and 2nd Periods',
+                    '2,3': '2nd and 3rd Periods',
+                    'OT': 'Overtime Only',
+                    'SO': 'Shootout Only'
+                };
+                summaryPeriods.textContent = periodMap[this.value] || 'All Periods';
+            });
+        }
+        
+        // Player Selection Modal Functionality
+        const playerFocus = document.getElementById('player_focus');
+        const selectedPlayersList = document.getElementById('selectedPlayersList');
+        const noPlayersMessage = document.getElementById('noPlayersMessage');
+        const confirmPlayerSelection = document.getElementById('confirmPlayerSelection');
+        const searchPlayerBtn = document.getElementById('searchPlayerBtn');
+        const playerSearchInput = document.getElementById('playerSearchInput');
+        const positionFilter = document.getElementById('positionFilter');
+        const teamFilter = document.getElementById('teamFilter');
+        
+        // Array to store selected players
+        let selectedPlayers = [];
+        
+        // Add player to selection
+        document.querySelectorAll('.add-player-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const playerId = row.getAttribute('data-player-id');
+                const playerName = row.cells[0].textContent;
+                const playerTeam = row.cells[1].textContent;
+                const playerPosition = row.cells[2].textContent;
+                
+                // Check if player is already selected
+                if (!selectedPlayers.some(p => p.id === playerId)) {
+                    selectedPlayers.push({
+                        id: playerId,
+                        name: playerName,
+                        team: playerTeam,
+                        position: playerPosition
+                    });
+                    
+                    updateSelectedPlayersList();
+                }
+            });
+        });
+        
+        // Update the selected players list
+        function updateSelectedPlayersList() {
+            if (selectedPlayers.length > 0) {
+                noPlayersMessage.style.display = 'none';
+                selectedPlayersList.innerHTML = '';
+                
+                selectedPlayers.forEach(player => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    listItem.innerHTML = `
+                        <div>
+                            <strong>${player.name}</strong>
+                            <span class="ms-2 badge bg-secondary">${player.team} | ${player.position}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger remove-player" data-player-id="${player.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    selectedPlayersList.appendChild(listItem);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-player').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const playerId = this.getAttribute('data-player-id');
+                        selectedPlayers = selectedPlayers.filter(p => p.id !== playerId);
+                        updateSelectedPlayersList();
+                    });
+                });
+            } else {
+                noPlayersMessage.style.display = 'block';
+                selectedPlayersList.innerHTML = '';
+            }
+        }
+        
+        // Confirm player selection
+        confirmPlayerSelection.addEventListener('click', function() {
+            const playerNames = selectedPlayers.map(p => p.name).join(', ');
+            playerFocus.value = playerNames;
+            
+            // Update the summary as well if it exists
+            if (summaryPlayer) {
+                summaryPlayer.textContent = playerNames || 'All Players';
+            }
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
+            modal.hide();
+        });
+        
+        // Filter players
+        function filterPlayers() {
+            const searchText = playerSearchInput.value.toLowerCase();
+            const position = positionFilter.value;
+            const team = teamFilter.value;
+            
+            document.querySelectorAll('#playersTable tbody tr').forEach(row => {
+                const playerName = row.cells[0].textContent.toLowerCase();
+                const playerTeam = row.getAttribute('data-team');
+                const playerPosition = row.getAttribute('data-position');
+                
+                const matchesSearch = playerName.includes(searchText);
+                const matchesPosition = position === 'all' || playerPosition === position;
+                const matchesTeam = team === 'all' || playerTeam === team;
+                
+                if (matchesSearch && matchesPosition && matchesTeam) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Search and filter event listeners
+        searchPlayerBtn.addEventListener('click', filterPlayers);
+        playerSearchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterPlayers();
+            }
+        });
+        positionFilter.addEventListener('change', filterPlayers);
+        teamFilter.addEventListener('change', filterPlayers);
+    });
+</script>
+{% endblock %}{% extends 'base.html' %}
+
+{% block title %}Set Up Bidding Strategy - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('moment_detail', moment_id=moment['id']) }}">{{ moment['name'] }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Set Up Strategy</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>Create Automated Bidding Strategy</h1>
+        <p class="lead">Configure how your brand will bid on {{ moment['name'] }} moments during NHL games</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Strategy Configuration</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('setup_strategy', moment_id=moment['id']) }}">
+                    <div class="mb-4">
+                        <h5>Selected Moment</h5>
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-hockey-puck fa-2x me-3 text-primary"></i>
+                            <div>
+                                <h5 class="mb-0">{{ moment['name'] }}</h5>
+                                <p class="mb-0 text-muted">{{ moment['description'] }}</p>
+                            </div>
+                            <div class="ms-auto">
+                                <span class="badge bg-primary">{{ moment['exposure'] }} Exposure</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Select Game</h5>
+                        <select class="form-select" name="game_id" id="game_id" required>
+                            <option value="" selected disabled>Choose a game...</option>
+                            {% for game in upcoming_games %}
+                            <option value="{{ game['id'] }}" {% if selected_game_id and selected_game_id|int == game['id'] %}selected{% endif %}>{{ game['date'] }} - {{ game['time'] }}: {{ game['away'] }} @ {{ game['home'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="mb-4">
+                        <h5>Bidding Parameters</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="base_bid" class="form-label">Base Bid Amount ($)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="base_bid" name="base_bid" min="1000" step="100" value="3000" required>
+                                </div>
+                                <div class="form-text">Your starting bid for each {{ moment['name'] }} moment</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="max_bid" class="form-label">Maximum Bid Amount ($)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="max_bid" name="max_bid" min="1000" step="100" value="7000" required>
+                                </div>
+                                <div class="form-text">Your system will never bid above this amount</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Strategic Focus</h5>
+                        <div class="mb-3">
+                            <label for="team_focus" class="form-label">Team Focus</label>
+                            <select class="form-select" id="team_focus" name="team_focus" required>
+                                <option value="both">Both Teams</option>
+                                <option value="home">Home Team Only</option>
+                                <option value="away">Away Team Only</option>
+                            </select>
+                            <div class="form-text">Select which team's {{ moment['name'] }} moments you want to bid on</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="player_focus" class="form-label">Player Focus (Optional)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="player_focus" name="player_focus" placeholder="e.g., Connor McDavid, Sidney Crosby" readonly>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#playerSelectionModal">
+                                    <i class="fas fa-users me-1"></i> Browse Players
+                                </button>
+                            </div>
+                            <div class="form-text">Specify player names to only bid on their moments (leave blank for all players)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Time and Period Restrictions</h5>
+                        <div class="mb-3">
+                            <label for="period_restrictions" class="form-label">Period Restrictions</label>
+                            <select class="form-select" id="period_restrictions" name="period_restrictions">
+                                <option value="">All Periods</option>
+                                <option value="1">1st Period Only</option>
+                                <option value="2">2nd Period Only</option>
+                                <option value="3">3rd Period Only</option>
+                                <option value="1,2">1st and 2nd Periods</option>
+                                <option value="2,3">2nd and 3rd Periods</option>
+                                <option value="OT">Overtime Only</option>
+                                <option value="SO">Shootout Only</option>
+                            </select>
+                            <div class="form-text">Restrict your bidding to specific periods</div>
+                        </div>
+                        
+                        {% if moment['name'] == 'Overtime Goal/Shootout' %}
+                        <div class="mb-3">
+                            <label for="specific_scenario" class="form-label">Specific Scenario</label>
+                            <select class="form-select" id="specific_scenario" name="specific_scenario">
+                                <option value="both">Both Overtime & Shootout</option>
+                                <option value="OT">Overtime Goal Only</option>
+                                <option value="SO">Shootout Only</option>
+                            </select>
+                            <div class="form-text">For overtime/shootout goals, specify which scenario you want to bid on</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Ad Content</h5>
+                        <div class="mb-3">
+                            <label for="ad_content" class="form-label">Ad Content URL</label>
+                            <input type="url" class="form-control" id="ad_content" name="ad_content" placeholder="https://yourdomain.com/ads/nhl-ad.mp4" required>
+                            <div class="form-text">URL to your ad content that will appear in the instant replay overlay</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>Create Bidding Strategy
+                        </button>
+                        <a href="{{ url_for('moment_detail', moment_id=moment['id']) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4 sticky-top" style="top: 20px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Strategy Summary</h5>
+            </div>
+            <div class="card-body">
+                <div id="strategy-summary">
+                    <p><strong>Moment Type:</strong> <span id="summary-moment">{{ moment['name'] }}</span></p>
+                    <p><strong>Game:</strong> <span id="summary-game">Not selected</span></p>
+                    <p><strong>Base Bid:</strong> $<span id="summary-base-bid">3,000</span></p>
+                    <p><strong>Max Bid:</strong> $<span id="summary-max-bid">7,000</span></p>
+                    <p><strong>Team Focus:</strong> <span id="summary-team">Both Teams</span></p>
+                    <p><strong>Player Focus:</strong> <span id="summary-player">All Players</span></p>
+                    <p><strong>Periods:</strong> <span id="summary-periods">All Periods</span></p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h6>Estimated Stats</h6>
+                    <p><strong>Est. Win Rate:</strong> <span id="est-win-rate">62%</span></p>
+                    <p><strong>Est. Cost:</strong> $<span id="est-cost">15,000 - 25,000</span></p>
+                    <p><strong>Est. Impressions:</strong> <span id="est-impressions">500,000+</span></p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Your strategy will automatically bid in real-time when conditions are met during the game.
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Strategies can be edited or paused at any time from your dashboard.</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Simple script to update the strategy summary in real-time
+    document.addEventListener('DOMContentLoaded', function() {
+        // Game selection
+        const gameSelect = document.getElementById('game_id');
+        const summaryGame = document.getElementById('summary-game');
+        
+        if (gameSelect) {
+            gameSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                summaryGame.textContent = selectedOption.text || 'Not selected';
+            });
+        }
+        
+        // Base bid
+        const baseBidInput = document.getElementById('base_bid');
+        const summaryBaseBid = document.getElementById('summary-base-bid');
+        
+        if (baseBidInput && summaryBaseBid) {
+            baseBidInput.addEventListener('input', function() {
+                summaryBaseBid.textContent = Number(this.value).toLocaleString();
+            });
+        }
+        
+        // Max bid
+        const maxBidInput = document.getElementById('max_bid');
+        const summaryMaxBid = document.getElementById('summary-max-bid');
+        
+        if (maxBidInput && summaryMaxBid) {
+            maxBidInput.addEventListener('input', function() {
+                summaryMaxBid.textContent = Number(this.value).toLocaleString();
+            });
+        }
+        
+        // Team focus
+        const teamFocusSelect = document.getElementById('team_focus');
+        const summaryTeam = document.getElementById('summary-team');
+        
+        if (teamFocusSelect && summaryTeam) {
+            teamFocusSelect.addEventListener('change', function() {
+                const teamMap = {
+                    'both': 'Both Teams',
+                    'home': 'Home Team Only',
+                    'away': 'Away Team Only'
+                };
+                summaryTeam.textContent = teamMap[this.value] || 'Both Teams';
+            });
+        }
+        
+        // Player focus
+        const playerFocusInput = document.getElementById('player_focus');
+        const summaryPlayer = document.getElementById('summary-player');
+        
+        if (playerFocusInput && summaryPlayer) {
+            playerFocusInput.addEventListener('input', function() {
+                summaryPlayer.textContent = this.value.trim() || 'All Players';
+            });
+        }
+        
+        // Period restrictions
+        const periodRestrictionsSelect = document.getElementById('period_restrictions');
+        const summaryPeriods = document.getElementById('summary-periods');
+        
+        if (periodRestrictionsSelect && summaryPeriods) {
+            periodRestrictionsSelect.addEventListener('change', function() {
+                const periodMap = {
+                    '': 'All Periods',
+                    '1': '1st Period Only',
+                    '2': '2nd Period Only',
+                    '3': '3rd Period Only',
+                    '1,2': '1st and 2nd Periods',
+                    '2,3': '2nd and 3rd Periods',
+                    'OT': 'Overtime Only'
+                };
+                summaryPeriods.textContent = periodMap[this.value] || 'All Periods';
+            });
+        }
+    });
+</script>
+{% endblock %}

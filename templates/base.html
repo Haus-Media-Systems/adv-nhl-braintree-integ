@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NHL Instant Replay Bidding Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --nhl-blue: #0033a0;
+            --nhl-red: #d2001c;
+            --nhl-gray: #a2aaad;
+            --nhl-dark: #111;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: var(--nhl-blue);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        .btn-primary {
+            background-color: var(--nhl-blue);
+            border-color: var(--nhl-blue);
+        }
+
+        .btn-primary:hover {
+            background-color: #00287d;
+            border-color: #00287d;
+        }
+
+        .btn-danger {
+            background-color: var(--nhl-red);
+            border-color: var(--nhl-red);
+        }
+
+        .btn-danger:hover {
+            background-color: #b30017;
+            border-color: #b30017;
+        }
+
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: var(--nhl-blue);
+            color: white;
+            font-weight: 600;
+            border-top-left-radius: 8px !important;
+            border-top-right-radius: 8px !important;
+        }
+
+        .card-footer {
+            background-color: #f8f9fa;
+        }
+
+        footer {
+            background-color: var(--nhl-dark);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+
+        .flash-message {
+            margin-top: 20px;
+        }
+
+        .moment-card {
+            height: 100%;
+        }
+
+        .strategy-card {
+            margin-bottom: 20px;
+        }
+
+        .auction-simulator {
+            padding: 30px;
+            background-color: #f0f5ff;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .auction-results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .winner {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .realtime-indicator {
+            color: var(--nhl-red);
+            animation: blink 1.5s infinite;
+            font-weight: bold;
+        }
+
+        /* Additional styling to improve appearance */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .lead {
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        .btn {
+            border-radius: 5px;
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 5px;
+        }
+
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        .form-control {
+            border-radius: 5px;
+            padding: 10px 15px;
+        }
+
+        .table {
+            background-color: white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: #f1f5f9;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .list-group-item {
+            transition: background-color 0.2s ease;
+        }
+
+        .list-group-item:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-hockey-puck me-2"></i>NHL Instant Replay Bidding
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+{% if user %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('my_strategies') }}">My Strategies</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('simulation') }}">Simulation</a>
+    </li>
+    <!-- Add the new Profile link here -->
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('profile') }}">My Profile</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+    </li>
+{% else %}                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container flash-message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>NHL Instant Replay Bidding Platform</h5>
+                    <p>Real-time automated bidding for NHL game moments.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2025 NHL Bidding Platform. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "1": {
+    "id": 1,
+    "name": "Goal",
+    "description": "Player scores a goal",
+    "exposure": "High",
+    "avg_bid": "$5,000",
+    "frequency": "5-7 per game"
+  },
+  "2": {
+    "id": 2,
+    "name": "Save",
+    "description": "Goalkeeper makes a spectacular save",
+    "exposure": "Medium",
+    "avg_bid": "$2,500",
+    "frequency": "10-15 per game"
+  },
+  "3": {
+    "id": 3,
+    "name": "Penalty",
+    "description": "Player receives a penalty",
+    "exposure": "Medium",
+    "avg_bid": "$3,000",
+    "frequency": "8-12 per game"
+  },
+  "4": {
+    "id": 4,
+    "name": "Fight",
+    "description": "Players engage in a fight",
+    "exposure": "Very High",
+    "avg_bid": "$6,000",
+    "frequency": "0-3 per game"
+  },
+  "5": {
+    "id": 5,
+    "name": "Overtime Goal/Shootout",
+    "description": "Game-winning goal in overtime or shootout",
+    "exposure": "Extremely High",
+    "avg_bid": "$8,000",
+    "frequency": "0-1 per game"
+  },
+  "6": {
+    "id": 6,
+    "name": "Hit",
+    "description": "Player delivers a significant body check",
+    "exposure": "Medium",
+    "avg_bid": "$2,000",
+    "frequency": "15-25 per game"
+  }
+}

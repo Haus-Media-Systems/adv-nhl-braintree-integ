@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "home": "New York Rangers",
+    "away": "Boston Bruins",
+    "date": "2025-04-26",
+    "time": "19:00 EST"
+  },
+  {
+    "id": 2,
+    "home": "Toronto Maple Leafs",
+    "away": "Montreal Canadiens",
+    "date": "2025-04-27",
+    "time": "20:00 EST"
+  },
+  {
+    "id": 3,
+    "home": "Edmonton Oilers",
+    "away": "Calgary Flames",
+    "date": "2025-04-28",
+    "time": "21:00 MST"
+  }
+]

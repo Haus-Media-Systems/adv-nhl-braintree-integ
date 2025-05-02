@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}NHL Instant Replay Bidding - Home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-5">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold">Real-Time Bidding for NHL Instant Replays</h1>
+        <p class="lead">Revolutionize your brand's visibility with millisecond-speed automated auctions that appear during the most exciting NHL moments.</p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+            {% if not user %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">Get Started</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+            {% else %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">My Dashboard</a>
+                <a href="{{ url_for('my_strategies') }}" class="btn btn-outline-secondary btn-lg px-4">My Strategies</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <img src="https://cdn.pixabay.com/photo/2019/12/03/21/54/ice-hockey-4671217_1280.jpg" class="img-fluid rounded shadow-lg" alt="NHL Hockey Game">
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12 text-center">
+        <h2>How It Works</h2>
+        <p class="lead">Our platform conducts instantaneous auctions in milliseconds when key moments occur during NHL games</p>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-cogs fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Set Your Strategy</h3>
+                <p class="card-text">Configure automated bidding strategies for different game moments like goals, saves, and penalties.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bolt fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Real-Time Auctions</h3>
+                <p class="card-text">When moments occur during games, the system conducts instantaneous auctions in milliseconds.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-tv fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Instant Visibility</h3>
+                <p class="card-text">The winning sponsor's ad appears overlaid on the instant replay seen by millions of viewers.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Key Benefits</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Targeted emotional moments with highest viewer engagement</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Automatic bidding means no manual monitoring required</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Precise budget control with maximum bid limits</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Focus on specific teams, players, or game situations</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Real-time analytics and performance tracking</li>
+                            <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Seamless integration with existing advertising strategies</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12 text-center">
+        <h2>Available Moments</h2>
+        <p class="lead">Bid on these high-impact game situations</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://cdn.pixabay.com/photo/2020/01/12/16/57/ice-hockey-4760288_1280.jpg" class="card-img-top" alt="Hockey Goal">
+            <div class="card-body">
+                <h4 class="card-title">Goals</h4>
+                <p class="card-text">The most exciting and memorable moments in hockey. Your brand can be part of the celebration.</p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Frequency: 5-7 per game</small>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://cdn.pixabay.com/photo/2014/10/22/18/13/ice-hockey-498652_1280.jpg" class="card-img-top" alt="Hockey Save">
+            <div class="card-body">
+                <h4 class="card-title">Spectacular Saves</h4>
+                <p class="card-text">Incredible goaltender saves create high engagement moments perfect for brand visibility.</p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Frequency: 10-15 per game</small>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://cdn.pixabay.com/photo/2016/03/27/19/23/ice-hockey-1283776_1280.jpg" class="card-img-top" alt="Overtime Goal">
+            <div class="card-body">
+                <h4 class="card-title">Overtime/Shootout Goals</h4>
+                <p class="card-text">The most high-stakes, dramatic moments with maximum viewer emotion and engagement.</p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Frequency: 0-1 per game</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-8 offset-md-2">
+        <div class="card bg-light">
+            <div class="card-body text-center p-5">
+                <h2 class="card-title mb-4">Ready to Transform Your NHL Advertising Strategy?</h2>
+                <p class="card-text lead mb-4">Join leading brands using our platform to capture attention at the most impactful moments.</p>
+                {% if not user %}
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-5 py-3">Create Your Account Today</a>
+                {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-5 py-3">Go to Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+@app.route('/delete_strategy/<strategy_id>')
+def delete_strategy(strategy_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+
+    # Check if strategy exists
+    if strategy_id not in strategies:
+        flash('Strategy not found.', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Check if strategy belongs to the current user
+    if strategies[strategy_id]['user_id'] != user['id']:
+        flash('You do not have permission to delete this strategy.', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Get the game_id before deleting the strategy
+    game_id = strategies[strategy_id]['game_id']
+
+    # Debug print before deletion
+    max_bid = float(strategies[strategy_id].get('max_bid', 0))
+    print(f"Deleting strategy {strategy_id} with max_bid ${max_bid:,.2f}")
+
+    # Delete the strategy
+    del strategies[strategy_id]
+
+    # Recalculation of budget happens automatically in get_user()
+    flash('Bidding strategy successfully removed.', 'success')
+
+    # Allow override of redirect location
+    redirect_game_id = request.args.get('redirect_game_id')
+    if redirect_game_id:
+        try:
+            game_id = int(redirect_game_id)
+        except ValueError:
+            pass  # If conversion fails, use the original game_id
+
+    # Redirect to the game detail page
+    return redirect(url_for('game_detail', game_id=game_id))

@@ -1,0 +1,541 @@
+# Mock database
+users = {
+    "1": {
+        "id": "1",
+        "name": "John Smith",
+        "company": "SportsDrink Co.",
+        "email": "john@example.com",
+        "password": "pbkdf2:sha256:150000$ABC123$1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",  # Password: password123
+        "budget": 50000
+    },
+    "2": {
+        "id": "2",
+        "name": "Jane Doe",
+        "company": "Car Manufacturer",
+        "email": "jane@example.com",
+        "password": "pbkdf2:sha256:150000$ABC123$1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",  # Password: password123
+        "budget": 75000
+    }
+}
+
+# Mock team and player data
+teams = {
+    "NYR": {
+        "id": "NYR",
+        "name": "New York Rangers",
+        "conference": "Eastern",
+        "division": "Metropolitan"
+    },
+    "BOS": {
+        "id": "BOS",
+        "name": "Boston Bruins",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "TOR": {
+        "id": "TOR",
+        "name": "Toronto Maple Leafs",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "MTL": {
+        "id": "MTL",
+        "name": "Montreal Canadiens",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "EDM": {
+        "id": "EDM",
+        "name": "Edmonton Oilers",
+        "conference": "Western",
+        "division": "Pacific"
+    },
+    "CGY": {
+        "id": "CGY",
+        "name": "Calgary Flames",
+        "conference": "Western",
+        "division": "Pacific"
+    }
+}
+
+players = {
+    # Rangers
+    "NYR-1": {"id": "NYR-1", "name": "Igor Shesterkin", "team": "NYR", "position": "G", "number": 31, "stats": {"gaa": 2.48, "sv_pct": 0.916, "shutouts": 3}},
+    "NYR-2": {"id": "NYR-2", "name": "Artemi Panarin", "team": "NYR", "position": "LW", "number": 10, "stats": {"goals": 32, "assists": 47, "points": 79}},
+    "NYR-3": {"id": "NYR-3", "name": "Mika Zibanejad", "team": "NYR", "position": "C", "number": 93, "stats": {"goals": 28, "assists": 39, "points": 67}},
+    "NYR-4": {"id": "NYR-4", "name": "Adam Fox", "team": "NYR", "position": "D", "number": 23, "stats": {"goals": 11, "assists": 54, "points": 65}},
+    "NYR-5": {"id": "NYR-5", "name": "Chris Kreider", "team": "NYR", "position": "LW", "number": 20, "stats": {"goals": 36, "assists": 21, "points": 57}},
+    
+    # Bruins
+    "BOS-1": {"id": "BOS-1", "name": "Jeremy Swayman", "team": "BOS", "position": "G", "number": 1, "stats": {"gaa": 2.32, "sv_pct": 0.921, "shutouts": 4}},
+    "BOS-2": {"id": "BOS-2", "name": "David Pastrnak", "team": "BOS", "position": "RW", "number": 88, "stats": {"goals": 43, "assists": 38, "points": 81}},
+    "BOS-3": {"id": "BOS-3", "name": "Brad Marchand", "team": "BOS", "position": "LW", "number": 63, "stats": {"goals": 26, "assists": 42, "points": 68}},
+    "BOS-4": {"id": "BOS-4", "name": "Charlie McAvoy", "team": "BOS", "position": "D", "number": 73, "stats": {"goals": 8, "assists": 42, "points": 50}},
+    "BOS-5": {"id": "BOS-5", "name": "Hampus Lindholm", "team": "BOS", "position": "D", "number": 27, "stats": {"goals": 9, "assists": 28, "points": 37}},
+    
+    # Maple Leafs
+    "TOR-1": {"id": "TOR-1", "name": "Auston Matthews", "team": "TOR", "position": "C", "number": 34, "stats": {"goals": 51, "assists": 27, "points": 78}},
+    "TOR-2": {"id": "TOR-2", "name": "Mitch Marner", "team": "TOR", "position": "RW", "number": 16, "stats": {"goals": 27, "assists": 53, "points": 80}},
+    "TOR-3": {"id": "TOR-3", "name": "William Nylander", "team": "TOR", "position": "RW", "number": 88, "stats": {"goals": 33, "assists": 39, "points": 72}},
+    "TOR-4": {"id": "TOR-4", "name": "John Tavares", "team": "TOR", "position": "C", "number": 91, "stats": {"goals": 29, "assists": 38, "points": 67}},
+    "TOR-5": {"id": "TOR-5", "name": "Joseph Woll", "team": "TOR", "position": "G", "number": 60, "stats": {"gaa": 2.65, "sv_pct": 0.912, "shutouts": 1}},
+    
+    # Canadiens
+    "MTL-1": {"id": "MTL-1", "name": "Cole Caufield", "team": "MTL", "position": "RW", "number": 22, "stats": {"goals": 26, "assists": 20, "points": 46}},
+    "MTL-2": {"id": "MTL-2", "name": "Nick Suzuki", "team": "MTL", "position": "C", "number": 14, "stats": {"goals": 22, "assists": 34, "points": 56}},
+    "MTL-3": {"id": "MTL-3", "name": "Mike Matheson", "team": "MTL", "position": "D", "number": 8, "stats": {"goals": 8, "assists": 31, "points": 39}},
+    "MTL-4": {"id": "MTL-4", "name": "Sam Montembeault", "team": "MTL", "position": "G", "number": 35, "stats": {"gaa": 3.05, "sv_pct": 0.904, "shutouts": 1}},
+    "MTL-5": {"id": "MTL-5", "name": "Kirby Dach", "team": "MTL", "position": "C", "number": 77, "stats": {"goals": 14, "assists": 24, "points": 38}},
+    
+    # Oilers
+    "EDM-1": {"id": "EDM-1", "name": "Connor McDavid", "team": "EDM", "position": "C", "number": 97, "stats": {"goals": 42, "assists": 66, "points": 108}},
+    "EDM-2": {"id": "EDM-2", "name": "Leon Draisaitl", "team": "EDM", "position": "C", "number": 29, "stats": {"goals": 38, "assists": 58, "points": 96}},
+    "EDM-3": {"id": "EDM-3", "name": "Zach Hyman", "team": "EDM", "position": "LW", "number": 18, "stats": {"goals": 33, "assists": 31, "points": 64}},
+    "EDM-4": {"id": "EDM-4", "name": "Evan Bouchard", "team": "EDM", "position": "D", "number": 2, "stats": {"goals": 12, "assists": 35, "points": 47}},
+    "EDM-5": {"id": "EDM-5", "name": "Stuart Skinner", "team": "EDM", "position": "G", "number": 74, "stats": {"gaa": 2.68, "sv_pct": 0.908, "shutouts": 2}},
+    
+    # Flames
+    "CGY-1": {"id": "CGY-1", "name": "Jacob Markstrom", "team": "CGY", "position": "G", "number": 25, "stats": {"gaa": 2.75, "sv_pct": 0.911, "shutouts": 2}},
+    "CGY-2": {"id": "CGY-2", "name": "Nazem Kadri", "team": "CGY", "position": "C", "number": 91, "stats": {"goals": 24, "assists": 37, "points": 61}},
+    "CGY-3": {"id": "CGY-3", "name": "Elias Lindholm", "team": "CGY", "position": "C", "number": 28, "stats": {"goals": 22, "assists": 28, "points": 50}},
+    "CGY-4": {"id": "CGY-4", "name": "Rasmus Andersson", "team": "CGY", "position": "D", "number": 4, "stats": {"goals": 10, "assists": 36, "points": 46}},
+    "CGY-5": {"id": "CGY-5", "name": "Blake Coleman", "team": "CGY", "position": "C", "number": 20, "stats": {"goals": 23, "assists": 19, "points": 42}}
+}from flask import Flask, render_template, request, redirect, url_for, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
+import random
+import uuid
+from datetime import datetime, timedelta
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Replace with a real secret key in production
+
+# Mock team and player data
+teams = {
+    "NYR": {
+        "id": "NYR",
+        "name": "New York Rangers",
+        "conference": "Eastern",
+        "division": "Metropolitan"
+    },
+    "BOS": {
+        "id": "BOS",
+        "name": "Boston Bruins",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "TOR": {
+        "id": "TOR",
+        "name": "Toronto Maple Leafs",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "MTL": {
+        "id": "MTL",
+        "name": "Montreal Canadiens",
+        "conference": "Eastern",
+        "division": "Atlantic"
+    },
+    "EDM": {
+        "id": "EDM",
+        "name": "Edmonton Oilers",
+        "conference": "Western",
+        "division": "Pacific"
+    },
+    "CGY": {
+        "id": "CGY",
+        "name": "Calgary Flames",
+        "conference": "Western",
+        "division": "Pacific"
+    }
+}
+
+players = {
+    # Rangers
+    "NYR-1": {"id": "NYR-1", "name": "Igor Shesterkin", "team": "NYR", "position": "G", "number": 31, "stats": {"gaa": 2.48, "sv_pct": 0.916, "shutouts": 3}},
+    "NYR-2": {"id": "NYR-2", "name": "Artemi Panarin", "team": "NYR", "position": "LW", "number": 10, "stats": {"goals": 32, "assists": 47, "points": 79}},
+    "NYR-3": {"id": "NYR-3", "name": "Mika Zibanejad", "team": "NYR", "position": "C", "number": 93, "stats": {"goals": 28, "assists": 39, "points": 67}},
+    "NYR-4": {"id": "NYR-4", "name": "Adam Fox", "team": "NYR", "position": "D", "number": 23, "stats": {"goals": 11, "assists": 54, "points": 65}},
+    "NYR-5": {"id": "NYR-5", "name": "Chris Kreider", "team": "NYR", "position": "LW", "number": 20, "stats": {"goals": 36, "assists": 21, "points": 57}},
+    
+    # Bruins
+    "BOS-1": {"id": "BOS-1", "name": "Jeremy Swayman", "team": "BOS", "position": "G", "number": 1, "stats": {"gaa": 2.32, "sv_pct": 0.921, "shutouts": 4}},
+    "BOS-2": {"id": "BOS-2", "name": "David Pastrnak", "team": "BOS", "position": "RW", "number": 88, "stats": {"goals": 43, "assists": 38, "points": 81}},
+    "BOS-3": {"id": "BOS-3", "name": "Brad Marchand", "team": "BOS", "position": "LW", "number": 63, "stats": {"goals": 26, "assists": 42, "points": 68}},
+    "BOS-4": {"id": "BOS-4", "name": "Charlie McAvoy", "team": "BOS", "position": "D", "number": 73, "stats": {"goals": 8, "assists": 42, "points": 50}},
+    "BOS-5": {"id": "BOS-5", "name": "Hampus Lindholm", "team": "BOS", "position": "D", "number": 27, "stats": {"goals": 9, "assists": 28, "points": 37}},
+    
+    # Maple Leafs
+    "TOR-1": {"id": "TOR-1", "name": "Auston Matthews", "team": "TOR", "position": "C", "number": 34, "stats": {"goals": 51, "assists": 27, "points": 78}},
+    "TOR-2": {"id": "TOR-2", "name": "Mitch Marner", "team": "TOR", "position": "RW", "number": 16, "stats": {"goals": 27, "assists": 53, "points": 80}},
+    "TOR-3": {"id": "TOR-3", "name": "William Nylander", "team": "TOR", "position": "RW", "number": 88, "stats": {"goals": 33, "assists": 39, "points": 72}},
+    "TOR-4": {"id": "TOR-4", "name": "John Tavares", "team": "TOR", "position": "C", "number": 91, "stats": {"goals": 29, "assists": 38, "points": 67}},
+    "TOR-5": {"id": "TOR-5", "name": "Joseph Woll", "team": "TOR", "position": "G", "number": 60, "stats": {"gaa": 2.65, "sv_pct": 0.912, "shutouts": 1}},
+    
+    # Canadiens
+    "MTL-1": {"id": "MTL-1", "name": "Cole Caufield", "team": "MTL", "position": "RW", "number": 22, "stats": {"goals": 26, "assists": 20, "points": 46}},
+    "MTL-2": {"id": "MTL-2", "name": "Nick Suzuki", "team": "MTL", "position": "C", "number": 14, "stats": {"goals": 22, "assists": 34, "points": 56}},
+    "MTL-3": {"id": "MTL-3", "name": "Mike Matheson", "team": "MTL", "position": "D", "number": 8, "stats": {"goals": 8, "assists": 31, "points": 39}},
+    "MTL-4": {"id": "MTL-4", "name": "Sam Montembeault", "team": "MTL", "position": "G", "number": 35, "stats": {"gaa": 3.05, "sv_pct": 0.904, "shutouts": 1}},
+    "MTL-5": {"id": "MTL-5", "name": "Kirby Dach", "team": "MTL", "position": "C", "number": 77, "stats": {"goals": 14, "assists": 24, "points": 38}},
+    
+    # Oilers
+    "EDM-1": {"id": "EDM-1", "name": "Connor McDavid", "team": "EDM", "position": "C", "number": 97, "stats": {"goals": 42, "assists": 66, "points": 108}},
+    "EDM-2": {"id": "EDM-2", "name": "Leon Draisaitl", "team": "EDM", "position": "C", "number": 29, "stats": {"goals": 38, "assists": 58, "points": 96}},
+    "EDM-3": {"id": "EDM-3", "name": "Zach Hyman", "team": "EDM", "position": "LW", "number": 18, "stats": {"goals": 33, "assists": 31, "points": 64}},
+    "EDM-4": {"id": "EDM-4", "name": "Evan Bouchard", "team": "EDM", "position": "D", "number": 2, "stats": {"goals": 12, "assists": 35, "points": 47}},
+    "EDM-5": {"id": "EDM-5", "name": "Stuart Skinner", "team": "EDM", "position": "G", "number": 74, "stats": {"gaa": 2.68, "sv_pct": 0.908, "shutouts": 2}},
+    
+    # Flames
+    "CGY-1": {"id": "CGY-1", "name": "Jacob Markstrom", "team": "CGY", "position": "G", "number": 25, "stats": {"gaa": 2.75, "sv_pct": 0.911, "shutouts": 2}},
+    "CGY-2": {"id": "CGY-2", "name": "Nazem Kadri", "team": "CGY", "position": "C", "number": 91, "stats": {"goals": 24, "assists": 37, "points": 61}},
+    "CGY-3": {"id": "CGY-3", "name": "Elias Lindholm", "team": "CGY", "position": "C", "number": 28, "stats": {"goals": 22, "assists": 28, "points": 50}},
+    "CGY-4": {"id": "CGY-4", "name": "Rasmus Andersson", "team": "CGY", "position": "D", "number": 4, "stats": {"goals": 10, "assists": 36, "points": 46}},
+    "CGY-5": {"id": "CGY-5", "name": "Blake Coleman", "team": "CGY", "position": "C", "number": 20, "stats": {"goals": 23, "assists": 19, "points": 42}}
+}
+strategies = {}
+moments = {
+    1: {
+        "id": 1,
+        "name": "Goal",
+        "description": "Player scores a goal",
+        "exposure": "High",
+        "avg_bid": "$5,000",
+        "frequency": "5-7 per game"
+    },
+    2: {
+        "id": 2,
+        "name": "Save",
+        "description": "Goalkeeper makes a spectacular save",
+        "exposure": "Medium",
+        "avg_bid": "$2,500",
+        "frequency": "10-15 per game"
+    },
+    3: {
+        "id": 3,
+        "name": "Penalty",
+        "description": "Player receives a penalty",
+        "exposure": "Medium",
+        "avg_bid": "$3,000",
+        "frequency": "8-12 per game"
+    },
+    4: {
+        "id": 4,
+        "name": "Fight",
+        "description": "Players engage in a fight",
+        "exposure": "Very High",
+        "avg_bid": "$6,000",
+        "frequency": "0-3 per game"
+    },
+    5: {
+        "id": 5,
+        "name": "Overtime Goal/Shootout",
+        "description": "Game-winning goal in overtime or shootout",
+        "exposure": "Extremely High",
+        "avg_bid": "$8,000",
+        "frequency": "0-1 per game"
+    },
+    6: {
+        "id": 6,
+        "name": "Hit",
+        "description": "Player delivers a significant body check",
+        "exposure": "Medium",
+        "avg_bid": "$2,000",
+        "frequency": "15-25 per game"
+    }
+}
+
+upcoming_games = [
+    {
+        "id": 1,
+        "home": "New York Rangers",
+        "away": "Boston Bruins",
+        "date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "time": "19:00 EST"
+    },
+    {
+        "id": 2,
+        "home": "Toronto Maple Leafs",
+        "away": "Montreal Canadiens",
+        "date": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
+        "time": "20:00 EST"
+    },
+    {
+        "id": 3,
+        "home": "Edmonton Oilers",
+        "away": "Calgary Flames",
+        "date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
+        "time": "21:00 MST"
+    }
+]
+
+sponsors = [
+    {
+        "id": 1,
+        "name": "SportsDrink Co.",
+        "budget": 50000,
+        "strategy_count": 3
+    },
+    {
+        "id": 2,
+        "name": "Car Manufacturer",
+        "budget": 75000,
+        "strategy_count": 2
+    },
+    {
+        "id": 3,
+        "name": "Insurance Company",
+        "budget": 100000,
+        "strategy_count": 5
+    }
+]
+
+# Helper functions
+def get_user():
+    if 'user_id' in session:
+        user_id = session['user_id']
+        print(f"Getting user with ID: {user_id}")
+        print(f"Available users: {list(users.keys())}")
+        user = users.get(user_id)
+        if user:
+            return user
+        else:
+            print(f"User ID {user_id} not found in users dictionary")
+    else:
+        print("No user_id in session")
+    return None
+
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html', user=get_user())
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Debug prints
+        print(f"Login attempt: email={email}")
+        print(f"Current users: {users}")
+        
+        # Simple validation
+        if not email or not password:
+            flash('Please fill out all fields.', 'error')
+            return redirect(url_for('login'))
+        
+        # Check if user exists
+        user_found = False
+        for user_id, user in users.items():
+            if user.get('email') == email:
+                user_found = True
+                # For demo purposes, accept any password for the sample users
+                if user_id in ["1", "2"] or check_password_hash(user.get('password', ''), password):
+                    session['user_id'] = user_id
+                    flash('Login successful!', 'success')
+                    print(f"Login successful for user_id={user_id}")
+                    return redirect(url_for('dashboard'))
+                else:
+                    flash('Incorrect password.', 'error')
+                    return redirect(url_for('login'))
+        
+        if not user_found:
+            flash('User does not exist.', 'error')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('login.html', user=get_user())
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        company = request.form.get('company')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Debug prints
+        print(f"Received form data: name={name}, company={company}, email={email}")
+        print(f"Form data type check: name={type(name)}, company={type(company)}, email={type(email)}")
+        
+        # Simple validation
+        if not name or not company or not email or not password or not confirm_password:
+            flash('Please fill out all fields.', 'error')
+            return redirect(url_for('register'))
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('register'))
+        
+        # Check if email already exists
+        for user in users.values():
+            if user.get('email') == email:
+                flash('Email already exists.', 'error')
+                return redirect(url_for('register'))
+        
+        # Create new user
+        user_id = str(uuid.uuid4())
+        users[user_id] = {
+            'id': user_id,
+            'name': name,
+            'company': company,
+            'email': email,
+            'password': generate_password_hash(password),
+            'budget': 100000  # Default budget
+        }
+        
+        # Debug print
+        print(f"Created new user: {users[user_id]}")
+        
+        session['user_id'] = user_id
+        flash('Registration successful!', 'success')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('register.html', user=get_user())
+
+@app.route('/game/<int:game_id>')
+def game_detail(game_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    game = next((g for g in upcoming_games if g['id'] == game_id), None)
+    if not game:
+        flash('Game not found.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('game_detail.html', user=user, game=game, moments=moments)
+
+@app.route('/dashboard')
+def dashboard():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    return render_template('dashboard.html', user=user, moments=moments, upcoming_games=upcoming_games)
+
+@app.route('/moment/<int:moment_id>')
+def moment_detail(moment_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    moment = moments.get(moment_id)
+    if not moment:
+        flash('Moment not found.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Print moment content for debugging
+    print(f"Moment detail for ID {moment_id}: {moment}")
+    
+    return render_template('moment_detail.html', user=user, moment=moment, upcoming_games=upcoming_games)
+
+@app.route('/setup_strategy/<int:moment_id>', methods=['GET', 'POST'])
+def setup_strategy(moment_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    moment = moments.get(moment_id)
+    if not moment:
+        flash('Moment not found.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get game_id from query string if present
+    selected_game_id = request.args.get('game_id')
+    
+    if request.method == 'POST':
+        strategy_id = str(uuid.uuid4())
+        strategies[strategy_id] = {
+            'id': strategy_id,
+            'user_id': user['id'],
+            'moment_id': moment_id,
+            'game_id': int(request.form.get('game_id')),
+            'base_bid': float(request.form.get('base_bid')),
+            'max_bid': float(request.form.get('max_bid')),
+            'team_focus': request.form.get('team_focus'),
+            'player_focus': request.form.get('player_focus', ''),
+            'period_restrictions': request.form.get('period_restrictions', ''),
+            'ad_content': request.form.get('ad_content'),
+            'date_created': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        flash('Bidding strategy created successfully!', 'success')
+        return redirect(url_for('my_strategies'))
+    
+    return render_template(
+        'setup_strategy.html', 
+        user=user, 
+        moment=moment, 
+        upcoming_games=upcoming_games, 
+        teams=teams, 
+        players=players,
+        selected_game_id=selected_game_id
+    )
+
+@app.route('/my_strategies')
+def my_strategies():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    # Get only user's strategies
+    user_strategies = {k: v for k, v in strategies.items() if v['user_id'] == user['id']}
+    
+    # Add moment and game details to each strategy
+    for strategy in user_strategies.values():
+        strategy['moment'] = moments.get(strategy['moment_id'])
+        strategy['game'] = next((g for g in upcoming_games if g['id'] == strategy['game_id']), None)
+    
+    return render_template('my_strategies.html', user=user, strategies=user_strategies)
+
+@app.route('/simulation')
+def simulation():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    return render_template('simulation.html', user=user, sponsors=sponsors, moments=moments)
+
+@app.route('/api/simulate_auction', methods=['POST'])
+def simulate_auction():
+    data = request.json
+    moment_id = data.get('moment_id')
+    
+    # Simulate an auction with the sponsors
+    results = []
+    for sponsor in sponsors:
+        # Generate a random bid based on the sponsor's budget
+        bid = round(random.uniform(1000, 10000), 2)
+        results.append({
+            'sponsor_id': sponsor['id'],
+            'sponsor_name': sponsor['name'],
+            'bid': bid
+        })
+    
+    # Sort by bid (highest first)
+    results.sort(key=lambda x: x['bid'], reverse=True)
+    
+    # Add a winning flag to the highest bidder
+    if results:
+        results[0]['winner'] = True
+    
+    return {'results': results}
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html', user=get_user()), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html', user=get_user()), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)

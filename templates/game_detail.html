@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ game['away'] }} @ {{ game['home'] }} - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Game Details</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-lg-8">
+        <h1>{{ game['away'] }} @ {{ game['home'] }}</h1>
+        <div class="d-flex align-items-center mb-4">
+            <div class="me-4">
+                <span class="badge bg-primary p-2 fs-6">{{ game['date'] }}</span>
+            </div>
+            <div>
+                <span class="badge bg-secondary p-2 fs-6">{{ game['time'] }}</span>
+            </div>
+            <div class="ms-auto">
+                <span class="realtime-indicator me-2">●</span> Ready for Bidding
+            </div>
+        </div>
+        <p class="lead">Create automated bidding strategies for this game's key moments.</p>
+    </div>
+    <div class="col-lg-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Available Budget</h5>
+                <h2 class="card-text">${{ "{:,.2f}".format(user['available_budget']) }}</h2>
+                <p class="card-text"><small>Remaining for automated bidding</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Team Matchup Overview</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-5 text-center">
+                        <h5>{{ game['away'] }}</h5>
+                        <div class="fs-1 mb-3">
+                            <i class="fas fa-hockey-puck text-primary"></i>
+                        </div>
+                        <p class="text-muted mb-0">Away Team</p>
+                    </div>
+                    <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+                        <div class="display-1 fw-bold">VS</div>
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <h5>{{ game['home'] }}</h5>
+                        <div class="fs-1 mb-3">
+                            <i class="fas fa-hockey-puck text-danger"></i>
+                        </div>
+                        <p class="text-muted mb-0">Home Team</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Strategies Button -->
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('my_strategies') }}" class="btn btn-lg btn-success">
+            <i class="fas fa-list-check me-2"></i> MY STRATEGIES
+        </a>
+    </div>
+</div>
+
+<!-- This is the moment cards section of game_detail.html -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Available Bidding Moments</h2>
+        <p>Choose a moment type to set up your automated bidding strategy for this game</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for moment_id, moment in moments.items() %}
+    <div class="col">
+        <div class="card h-100 moment-card">
+            {% if moment['name'] == 'Goal' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-hockey-puck fa-4x text-danger"></i>
+                </div>
+            {% elif moment['name'] == 'Save' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-shield-alt fa-4x text-info"></i>
+                </div>
+            {% elif moment['name'] == 'Penalty' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-exclamation-triangle fa-4x text-warning"></i>
+                </div>
+            {% elif moment['name'] == 'Fight' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-fist-raised fa-4x text-secondary"></i>
+                </div>
+            {% elif moment['name'] == 'Overtime Goal/Shootout' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-star fa-4x text-success"></i>
+                </div>
+            {% elif moment['name'] == 'Hit' %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-balance-scale fa-4x text-primary"></i>
+                </div>
+            {% else %}
+                <div class="card-img-top text-center p-3 bg-light">
+                    <i class="fas fa-hockey-puck fa-4x text-primary"></i>
+                </div>
+            {% endif %}
+            <div class="card-header">
+                <h5 class="mb-0">{{ moment['name'] }}</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Description:</strong> {{ moment['description'] }}</p>
+                <p><strong>Exposure:</strong> {{ moment['exposure'] }}</p>
+                <p><strong>Average Winning Bid:</strong> {{ moment['avg_bid'] }}</p>
+                <p><strong>Frequency:</strong> {{ moment['frequency'] }}</p>
+            </div>
+            <div class="card-footer d-grid">
+                <!-- DEBUG: moment_id = {{ moment_id }}, has_strategy = {{ moment_strategy_map[moment_id] }} -->
+                <!-- DEBUG: moment_strategy_map = {{ debug_data.moment_strategy_map }} -->
+                {% if moment_strategy_map[moment_id] %}
+                    <a href="{{ url_for('setup_strategy', moment_id=moment_id, game_id=game['id']) }}" class="btn btn-info">
+                        <i class="fas fa-edit me-1"></i> Edit Current Strategy
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('setup_strategy', moment_id=moment_id, game_id=game['id']) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create Bidding Strategy
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-8 offset-md-2">
+        <div class="card bg-light">
+            <div class="card-body text-center p-4">
+                <h3>Pre-Game Analytics</h3>
+                <p class="lead">Based on historical data and team performance metrics</p>
+
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="fs-1 text-primary mb-2">
+                                <i class="fas fa-hockey-puck"></i>
+                            </div>
+                            <h5>Est. Goals</h5>
+                            <p class="fs-4">5-7</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="fs-1 text-warning mb-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h5>Est. Penalties</h5>
+                            <p class="fs-4">8-10</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="fs-1 text-success mb-2">
+                                <i class="fas fa-tv"></i>
+                            </div>
+                            <h5>Audience Size</h5>
+                            <p class="fs-4">2.1M+</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Add custom styles for the buttons */
+.btn-info {
+    background-color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: white !important;
+    font-weight: 500 !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-dismiss flash messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all flash messages
+        const flashMessages = document.querySelectorAll('.alert:not(.alert-dismissible):not(.alert-info)');
+
+        // Set a timeout to remove each flash message after 5 seconds
+        flashMessages.forEach(function(message) {
+            setTimeout(function() {
+                // Add fade-out animation
+                message.style.transition = 'opacity 1s';
+                message.style.opacity = '0';
+
+                // Remove from DOM after animation completes
+                setTimeout(function() {
+                    message.remove();
+                }, 1000);
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %}

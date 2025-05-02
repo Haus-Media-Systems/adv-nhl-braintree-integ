@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+
+{% block title %}Game Simulation - NHL Real-Time Auction Platform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Game Simulation</h2>
+            <p class="lead">Experience how real-time bidding works during the game</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="d-flex justify-content-end">
+                <a href="{{ url_for('my_strategies') }}" class="btn btn-outline-primary me-2">My Strategies</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Information Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/Montreal_Canadiens.svg/1200px-Montreal_Canadiens.svg.png" alt="Montreal Canadiens" class="team-logo img-fluid">
+                </div>
+                <div class="col-md-8">
+                    <h3>{{ game.away_team }} vs {{ game.home_team }}</h3>
+                    <p>{{ game.date }} • {{ game.time }}<br>{{ game.venue }}</p>
+                    <div class="badge bg-warning text-dark">Simulation Mode</div>
+                </div>
+                <div class="col-md-2 text-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/b/b6/Toronto_Maple_Leafs_2016_logo.svg/1200px-Toronto_Maple_Leafs_2016_logo.svg.png" alt="Toronto Maple Leafs" class="team-logo img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Simulation Instructions -->
+    <div class="alert alert-info mb-4">
+        <h5 class="alert-heading">How this simulation works:</h5>
+        <p>Select any game event below to see how the real-time bidding process would work when that moment occurs. The system will use your configured bidding strategies to participate in the auction.</p>
+        <hr>
+        <p class="mb-0"><strong>Note:</strong> This is a simulation only. No actual bids will be placed or charged.</p>
+    </div>
+    
+    <!-- Game Timeline -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Game Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for event in events %}
+                        <button type="button" class="list-group-item list-group-item-action simulate-event" data-event-index="{{ loop.index0 }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ event.time }} - {{ event.event }}</h5>
+                                <small class="text-primary">Click to simulate</small>
+                            </div>
+                            <p class="mb-1">{{ event.description }}</p>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Active Strategies</h5>
+                </div>
+                <div class="card-body">
+                    <div id="active-strategies">
+                        <!-- This will be populated by JavaScript -->
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auction Results Section (hidden until simulation runs) -->
+    <div id="auction-results" class="d-none">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Real-Time Auction Results</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="auction-event-details">
+                            <!-- Event details will appear here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="auction-stats">
+                            <!-- Auction stats will appear here -->
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Bidding Process</h5>
+                        <div id="bidding-process" class="mt-3">
+                            <!-- Bidding process will appear here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="winner-display">
+                            <!-- Winner display will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ad Display Section -->
+        <div class="card" id="ad-display-card">
+            <div class="card-header">
+                <h5 class="mb-0">Instant Replay with Ad Overlay</h5>
+            </div>
+            <div class="card-body">
+                <div id="ad-display" class="text-center">
+                    <!-- Ad display will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Simulation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load active strategies
+    loadActiveStrategies();
+    
+    // Set up event listeners for simulation buttons
+    document.querySelectorAll('.simulate-event').forEach(button => {
+        button.addEventListener('click', function() {
+            const eventIndex = this.dataset.eventIndex;
+            simulateEvent(eventIndex);
+        });
+    });
+    
+    function loadActiveStrategies() {
+        // In a real app, this would be an AJAX call
+        // For the prototype, we'll simulate with setTimeout
+        setTimeout(() => {
+            const strategiesDiv = document.getElementById('active-strategies');
+            
+            // Check if there are strategies (this would be from server-side in real app)
+            if (Object.keys({{ strategies|default('{}')|tojson }}).length > 0) {
+                let html = '<ul class="list-group">';
+                
+                {% for moment in potential_moments %}
+                    if ({{ moment.id }} in {{ strategies|default('{}')|tojson }}) {
+                        const strategy = {{ strategies|default('{}')|tojson }}[{{ moment.id }}];
+                        if (strategy.active) {
+                            html += `
+                                <li class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ moment.name }}</h6>
+                                        <span class="badge bg-success">Active</span>
+                                    </div>
+                                    <p class="mb-1 small">Max Bid: $${strategy.max_bid.toLocaleString()}</p>
+                                </li>
+                            `;
+                        }
+                    }
+                {% endfor %}
+                
+                html += '</ul>';
+                
+                if (html === '<ul class="list-group"></ul>') {
+                    html = `
+                        <div class="alert alert-warning">
+                            <p class="mb-0">You don't have any active bidding strategies.</p>
+                            <a href="{{ url_for('dashboard') }}" class="alert-link">Set up strategies</a> to participate in auctions.
+                        </div>
+                    `;
+                }
+                
+                strategiesDiv.innerHTML = html;
+            } else {
+                strategiesDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <p class="mb-0">You don't have any active bidding strategies.</p>
+                        <a href="{{ url_for('dashboard') }}" class="alert-link">Set up strategies</a> to participate in auctions.
+                    </div>
+                `;
+            }
+        }, 500);
+    }
+    
+    function simulateEvent(eventIndex) {
+        // Show loading state
+        document.querySelectorAll('.simulate-event').forEach(btn => {
+            btn.classList.add('disabled');
+        });
+        
+        // Make the auction results section visible
+        document.getElementById('auction-results').classList.remove('d-none');
+        
+        // Scroll to the results section
+        document.getElementById('auction-results').scrollIntoView({
+            behavior: 'smooth'
+        });
+        
+        // In a real app, this would be an AJAX call to the server
+        fetch(`/simulate_event/${eventIndex}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAuctionResults(data.auction);
+            }
+            
+            // Re-enable buttons
+            document.querySelectorAll('.simulate-event').forEach(btn => {
+                btn.classList.remove('disabled');
+            });
+        });
+    }
+    
+    function displayAuctionResults(auction) {
+        // Display event details
+        const eventDetailsDiv = document.getElementById('auction-event-details');
+        eventDetailsDiv.innerHTML = `
+            <h5>Game Moment</h5>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6>${auction.event.time}</h6>
+                    <p class="fs-5 fw-bold">${auction.event.description}</p>
+                    <span class="badge bg-primary">${auction.moment.category}</span>
+                </div>
+            </div>
+        `;
+        
+        // Display auction stats
+        const statsDiv = document.getElementById('auction-stats');
+        statsDiv.innerHTML = `
+            <h5>Auction Stats</h5>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Bidders:</strong> ${auction.bidders}</p>
+                            <p class="mb-1"><strong>Duration:</strong> ${auction.duration_ms}ms</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Starting Bid:</strong> $${auction.moment.min_bid.toLocaleString()}</p>
+                            <p class="mb-1"><strong>Bid Rounds:</strong> ${auction.bids.length}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Display bidding process
+        const biddingDiv = document.getElementById('bidding-process');
+        let biddingHtml = '<div class="timeline">';
+        
+        if (auction.bids.length > 0) {
+            auction.bids.forEach((bid, index) => {
+                biddingHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-primary">${index + 1}</div>
+                        <div class="timeline-content">
+                            <p class="mb-1"><strong>${bid.company}</strong> bids $${bid.amount.toLocaleString()}</p>
+                            <p class="text-muted small mb-0">${auction.duration_ms / auction.bids.length * (index + 1)}ms</p>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            biddingHtml += `
+                <div class="alert alert-info">
+                    <p class="mb-0">No bids were placed for this moment.</p>
+                </div>
+            `;
+        }
+        
+        biddingHtml += '</div>';
+        biddingDiv.innerHTML = biddingHtml;
+        
+        // Display winner
+        const winnerDiv = document.getElementById('winner-display');
+        
+        if (auction.winner) {
+            winnerDiv.innerHTML = `
+                <h5 class="text-center mb-3">Winning Bid</h5>
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <img src="${auction.winner.logo_url}" alt="${auction.winner.company} logo" class="mb-3" style="max-height: 80px;">
+                        <h4>${auction.winner.company}</h4>
+                        <p class="fs-5">Winning Bid: $${auction.winner.bid_amount.toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Display ad mockup
+            const adDisplayDiv = document.getElementById('ad-display');
+            adDisplayDiv.innerHTML = `
+                <div class="position-relative d-inline-block">
+                    <img src="https://via.placeholder.com/800x450?text=${auction.event.event}+Replay" class="img-fluid rounded" alt="Example replay">
+                    <div class="position-absolute" style="bottom: 20px; right: 20px; background-color: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
+                        <img src="${auction.winner.logo_url}" alt="${auction.winner.company} logo" style="height: 40px;">
+                        <span class="ms-2 fw-bold">${auction.winner.company}</span>
+                    </div>
+                </div>
+                <p class="text-muted mt-2">Sponsor overlay displayed during the instant replay</p>
+            `;
+            
+            // Show the ad display card
+            document.getElementById('ad-display-card').classList.remove('d-none');
+        } else {
+            winnerDiv.innerHTML = `
+                <h5 class="text-center mb-3">No Winner</h5>
+                <div class="card text-center bg-secondary text-white">
+                    <div class="card-body">
+                        <p class="fs-5">No bids were placed for this moment</p>
+                        <p>Set up your bidding strategies to participate in future auctions</p>
+                    </div>
+                </div>
+            `;
+            
+            // Hide the ad display card
+            document.getElementById('ad-display-card').classList.add('d-none');
+        }
+    }
+});
+</script>
+
+<style>
+/* Timeline styling for bidding process */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 15px;
+    width: 3px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding-left: 40px;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    color: white;
+    z-index: 1;
+}
+
+.timeline-content {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}

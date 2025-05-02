@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ moment.name }} Details - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ moment.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-8">
+        <h1>{{ moment.name }}</h1>
+        <p class="lead">{{ moment.description }}</p>
+
+        <!-- Check if user has a strategy for this moment -->
+        {% if user_strategies is defined %}
+            {% set has_strategy = false %}
+            {% for s_id, strategy in user_strategies.items() %}
+                {% if strategy.moment_id == moment.id %}
+                    {% set has_strategy = true %}
+                {% endif %}
+            {% endfor %}
+
+            {% if has_strategy %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> You already have an active bidding strategy for this moment type.
+            </div>
+            <a href="{{ url_for('setup_strategy', moment_id=moment.id) }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-edit me-2"></i> Edit Your Bidding Strategy
+            </a>
+            <a href="{{ url_for('my_strategies') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                View All Your Strategies
+            </a>
+            {% else %}
+            <div class="alert alert-primary">
+                <i class="fas fa-lightbulb me-2"></i> Create an automated bidding strategy to bid on {{ moment.name }} moments during NHL games.
+            </div>
+            <a href="{{ url_for('setup_strategy', moment_id=moment.id) }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle me-2"></i> Create Bidding Strategy
+            </a>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-primary">
+                <i class="fas fa-lightbulb me-2"></i> Create an automated bidding strategy to bid on {{ moment.name }} moments during NHL games.
+            </div>
+            <a href="{{ url_for('setup_strategy', moment_id=moment.id) }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle me-2"></i> Create Bidding Strategy
+            </a>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Moment Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Exposure Level:</strong> <span class="badge bg-info">{{ moment.exposure }}</span></p>
+                <p><strong>Average Bid Amount:</strong> {{ moment.avg_bid }}</p>
+                <p><strong>Frequency:</strong> {{ moment.frequency }}</p>
+
+                <hr>
+
+                <h6>Popularity by Team</h6>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">Rangers (25%)</div>
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: 22%;" aria-valuenow="22" aria-valuemin="0" aria-valuemax="100">Bruins (22%)</div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 18%;" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100">Leafs (18%)</div>
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 35%;" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">Others (35%)</div>
+                </div>
+
+                <h6>Popularity by Period</h6>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">1st (20%)</div>
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%;" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100">2nd (30%)</div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">3rd (50%)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Upcoming Games</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Select a game to set up a bidding strategy for {{ moment.name }} moments:</p>
+
+                <div class="row">
+                    {% for game in upcoming_games %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ game.away }} @ {{ game.home }}</h5>
+                                <p class="text-muted">{{ game.date }} | {{ game.time }}</p>
+
+                                <!-- Check if user has a strategy for this moment and game -->
+                                {% if user_strategies is defined %}
+                                    {% set has_game_strategy = false %}
+                                    {% for s_id, strategy in user_strategies.items() %}
+                                        {% if strategy.moment_id == moment.id and strategy.game_id == game.id %}
+                                            {% set has_game_strategy = true %}
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if has_game_strategy %}
+                                    <a href="{{ url_for('setup_strategy', moment_id=moment.id, game_id=game.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i> Edit Strategy
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('setup_strategy', moment_id=moment.id, game_id=game.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-plus-circle me-1"></i> Setup For This Game
+                                    </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('setup_strategy', moment_id=moment.id, game_id=game.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-plus-circle me-1"></i> Setup For This Game
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Historical Performance</h4>
+            </div>
+            <div class="card-body">
+                <h5>{{ moment.name }} Moments Last Season</h5>
+
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Stat</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Total Occurrences</td>
+                                <td>1,247</td>
+                            </tr>
+                            <tr>
+                                <td>Average Per Game</td>
+                                <td>6.3</td>
+                            </tr>
+                            <tr>
+                                <td>Average Ad Duration</td>
+                                <td>7.2 seconds</td>
+                            </tr>
+                            <tr>
+                                <td>Average Viewer Impressions</td>
+                                <td>452,000</td>
+                            </tr>
+                            <tr>
+                                <td>Average Winning Bid</td>
+                                <td>$4,750</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i> Historical data is provided to help inform your bidding strategy.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Strategy Recommendations</h4>
+            </div>
+            <div class="card-body">
+                <h5>For {{ moment.name }} Moments</h5>
+
+                <div class="mb-3">
+                    <h6><i class="fas fa-bullseye me-2"></i> Optimal Bidding Range</h6>
+                    <p>For maximum ROI, we recommend bidding between $3,500 - $5,500 for this moment type.</p>
+                </div>
+
+                <div class="mb-3">
+                    <h6><i class="fas fa-users me-2"></i> Player Focus</h6>
+                    <p>Consider focusing on star players for this moment type, as they generate 45% more viewer engagement.</p>
+                </div>
+
+                <div class="mb-3">
+                    <h6><i class="fas fa-clock me-2"></i> Timing Strategy</h6>
+                    <p>{{ moment.name }} moments in the 3rd period tend to have 35% higher visibility than in earlier periods.</p>
+                </div>
+
+                <div class="alert alert-success mt-3 mb-0">
+                    <i class="fas fa-check-circle me-2"></i> Our AI-powered recommendation engine updates these suggestions based on ongoing game data.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
