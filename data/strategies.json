@@ -1,1 +1,17 @@
-{}
+{
+  "55929fa0-a926-4609-b2ca-75b4e1e8ded7": {
+    "moment_id": "5",
+    "game_id": 2,
+    "user_id": "1",
+    "base_bid": 3000,
+    "bid_increment": 500,
+    "max_bid": 7000,
+    "team_focus": "both",
+    "player_focus": "",
+    "period_restrictions": "",
+    "ad_content": "https://example.com/test-ad.mp4",
+    "created_at": "2025-05-04 13:07:41",
+    "status": "active",
+    "specific_scenario": "both"
+  }
+}

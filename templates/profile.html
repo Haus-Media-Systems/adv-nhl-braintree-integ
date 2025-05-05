@@ -19,7 +19,7 @@
                         </div>
                         <div>
                             <h6 class="mb-0">Available Budget</h6>
-                            <h2 class="mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h2>
+                            <h2 class="mb-0" id="available-budget">${{ "{:,.2f}".format(user.available_budget) }}</h2>
                         </div>
                     </div>
                 </div>
@@ -37,16 +37,16 @@
                 <div class="card-body">
                     <form id="profile-form" action="{{ url_for('update_profile') }}" method="POST">
                         <div class="mb-3">
-                            <label for="name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}">
+                            <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="company" class="form-label">Company</label>
-                            <input type="text" class="form-control" id="company" name="company" value="{{ user.company }}">
+                            <label for="company" class="form-label">Company <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="company" name="company" value="{{ user.company }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
@@ -73,7 +73,7 @@
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted">Total Budget</h6>
-                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.total_budget) }}</h4>
+                                        <h4 class="mb-0" id="total-budget">${{ "{:,.2f}".format(user.total_budget) }}</h4>
                                     </div>
                                 </div>
                             </div>
@@ -81,7 +81,7 @@
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted">In Use</h6>
-                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.used_budget) }}</h4>
+                                        <h4 class="mb-0" id="used-budget">${{ "{:,.2f}".format(user.used_budget) }}</h4>
                                     </div>
                                 </div>
                             </div>
@@ -89,7 +89,7 @@
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted">Available</h6>
-                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h4>
+                                        <h4 class="mb-0" id="available-budget-box">${{ "{:,.2f}".format(user.available_budget) }}</h4>
                                     </div>
                                 </div>
                             </div>
@@ -99,25 +99,33 @@
                     <h5>Add Funds</h5>
                     <div class="mb-4">
                         <div class="form-group mb-3">
-                            <label for="amount" class="form-label">Amount to Add</label>
+                            <label for="amount" class="form-label">Amount to Add <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="amount" placeholder="0.00" min="100" step="100">
+                                <input type="number" class="form-control" id="amount" placeholder="0.00" min="100" step="100" value="1000">
+                                <div class="invalid-feedback">Please enter an amount of at least $100</div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-success mb-3" onclick="showBankLinkMessage()">
-                            <i class="fas fa-plus-circle me-1"></i> Add Funds
-                        </button>
-                        <button type="button" class="btn btn-outline-danger mb-3" onclick="showBankLinkMessage()">
-                            <i class="fas fa-minus-circle me-1"></i> Withdraw Funds
+
+                        <!-- Braintree Drop-in UI Container -->
+                        <div id="dropin-container" class="mb-3"></div>
+                        <div id="payment-status" class="alert alert-info d-none mb-3">
+                            <i class="fas fa-spinner fa-spin me-2"></i> Initializing payment system...
+                        </div>
+
+                        <button type="button" class="btn btn-success mb-3 w-100" id="submit-button" disabled>
+                            <i class="fas fa-credit-card me-1"></i> Add Funds
                         </button>
                     </div>
 
-                    <h5>Connected Accounts</h5>
-                    <div class="d-grid">
-                        <button type="button" class="btn btn-outline-primary" onclick="showBankLinkMessage()">
-                            <i class="fas fa-university me-1"></i> Link Bank Account
-                        </button>
+                    <h5>Payment Methods</h5>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>You can use the following test card for sandbox testing:
+                        <ul class="mb-0 mt-2">
+                            <li>Card Number: 4111-1111-1111-1111</li>
+                            <li>Expiration: Any future date</li>
+                            <li>CVV: 123</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -145,7 +153,7 @@
                                 <tbody>
                                     {% for strategy_id, strategy in user_strategies.items() %}
                                     <tr>
-                                        <td>{{ strategy.get('date_created', 'N/A') }}</td>
+                                        <td>{{ strategy.get('created_at', 'N/A') }}</td>
                                         <td>
                                             {% for g in upcoming_games %}
                                                 {% if g.id == strategy.game_id %}
@@ -190,32 +198,208 @@
     </div>
 </div>
 
-<!-- Bank Link Modal -->
-<div class="modal fade" id="bankLinkModal" tabindex="-1" aria-labelledby="bankLinkModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bankLinkModalLabel">Bank Account Link</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-3">
-                    <i class="fas fa-university fa-4x text-muted mb-3"></i>
-                    <h5>Cannot Link to External Bank Account at this Time</h5>
-                    <p class="text-muted">This feature is currently under development. Please check back later.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+<!-- Toast for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="paymentToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Payment Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
+<!-- Braintree Integration -->
+<script src="https://js.braintreegateway.com/web/dropin/1.44.1/js/dropin.min.js"></script>
 <script>
-    function showBankLinkMessage() {
-        var myModal = new bootstrap.Modal(document.getElementById('bankLinkModal'));
-        myModal.show();
+document.addEventListener('DOMContentLoaded', function() {
+    const submitButton = document.getElementById('submit-button');
+    const amountInput = document.getElementById('amount');
+    const paymentStatus = document.getElementById('payment-status');
+    let dropinInstance;
+
+    // Show payment status
+    paymentStatus.classList.remove('d-none');
+    paymentStatus.classList.add('d-block');
+
+    // Initialize Braintree Drop-in UI
+    function initializeBraintree() {
+        console.log("Initializing Braintree...");
+        
+        fetch('/client_token')
+            .then(response => {
+                console.log("Client token response status:", response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log("Client token received:", data.client_token ? "Success" : "Failed");
+                
+                if (data.error) {
+                    console.error('Error fetching client token:', data.error);
+                    paymentStatus.classList.remove('alert-info');
+                    paymentStatus.classList.add('alert-danger');
+                    paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error initializing payment system';
+                    return;
+                }
+
+                // Hide status once we start creating the drop-in
+                paymentStatus.classList.add('d-none');
+                
+                braintree.dropin.create({
+                    authorization: data.client_token,
+                    container: '#dropin-container',
+                    card: {
+                        cardholderName: {
+                            required: false
+                        }
+                    }
+                }, function (createErr, instance) {
+                    if (createErr) {
+                        console.error('Error creating Drop-in:', createErr);
+                        paymentStatus.classList.remove('d-none', 'alert-info');
+                        paymentStatus.classList.add('alert-danger');
+                        paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error initializing payment form';
+                        return;
+                    }
+
+                    console.log("Braintree Drop-in created successfully");
+                    dropinInstance = instance;
+                    submitButton.disabled = false;
+                    
+                    // Enable the submit button if the user has a payment method
+                    instance.on('paymentMethodRequestable', function (event) {
+                        console.log("Payment method requestable:", event);
+                        submitButton.disabled = false;
+                    });
+
+                    // Disable the submit button if the user doesn't have a payment method
+                    instance.on('noPaymentMethodRequestable', function () {
+                        console.log("No payment method requestable");
+                        submitButton.disabled = true;
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching client token:', error);
+                paymentStatus.classList.remove('alert-info');
+                paymentStatus.classList.add('alert-danger');
+                paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error connecting to payment system';
+            });
     }
+
+    // Validate amount input
+    amountInput.addEventListener('input', function() {
+        const amount = parseFloat(this.value);
+        if (amount < 100) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Handle payment submission
+    submitButton.addEventListener('click', function() {
+        const amount = amountInput.value;
+
+        if (!amount || parseFloat(amount) < 100) {
+            showToast('Please enter an amount of at least $100', 'error');
+            amountInput.classList.add('is-invalid');
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+
+        dropinInstance.requestPaymentMethod(function (err, payload) {
+            if (err) {
+                console.error('Payment method error:', err);
+                showToast('Error processing payment method', 'error');
+                resetButton();
+                return;
+            }
+
+            console.log("Payment method received:", payload.type);
+
+            // Send payment to server
+            fetch('/add_funds', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    payment_method_nonce: payload.nonce,
+                    amount: amount
+                })
+            })
+            .then(response => {
+                console.log("Add funds response status:", response.status);
+                return response.json();
+            })
+            .then(result => {
+                console.log("Add funds result:", result);
+                
+                if (result.success) {
+                    showToast(`Successfully added $${amount} to your account!`, 'success');
+                    
+                    // Update budget displays if new_budget is available
+                    if (result.new_budget !== undefined) {
+                        updateBudgetDisplay(result.new_budget);
+                    }
+                    
+                    // Reload page after short delay to update budget
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showToast(result.message || 'Failed to process payment', 'error');
+                    resetButton();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while processing your payment', 'error');
+                resetButton();
+            });
+        });
+    });
+
+    // Update budget display without page reload
+    function updateBudgetDisplay(newBudget) {
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+        
+        const formattedBudget = formatter.format(newBudget);
+        
+        document.getElementById('total-budget').textContent = formattedBudget;
+        document.getElementById('available-budget').textContent = formattedBudget;
+        document.getElementById('available-budget-box').textContent = formattedBudget;
+    }
+
+    // Show toast notification
+    function showToast(message, type) {
+        const toastEl = document.getElementById('paymentToast');
+        const toastBody = toastEl.querySelector('.toast-body');
+
+        toastBody.textContent = message;
+        toastEl.classList.remove('bg-success', 'bg-danger');
+        toastEl.classList.add(type === 'success' ? 'bg-success' : 'bg-danger');
+        toastEl.classList.add('text-white');
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    // Reset submit button
+    function resetButton() {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i> Add Funds';
+    }
+
+    // Initialize Braintree when page loads
+    initializeBraintree();
+});
 </script>
 {% endblock %}

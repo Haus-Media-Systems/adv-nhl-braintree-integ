@@ -6,9 +6,21 @@ from datetime import datetime, timedelta
 import os
 import json
 import storage  # Import the storage module
+import braintree
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key_change_in_production')
+
+# Configure Braintree
+braintree_gateway = braintree.BraintreeGateway(
+    braintree.Configuration(
+        environment=braintree.Environment.Sandbox,
+        merchant_id="cmw9qh963vbrbnp7",
+        public_key="b4m63tfbnjh229qk",
+        private_key="6dbee76c103a0c6bf6ae64a5076a9708"
+    )
+)
 
 # Mock database - Load from storage or use defaults
 users = storage.load_users({
@@ -372,7 +384,7 @@ def register():
                 flash('Email already exists.', 'error')
                 return redirect(url_for('register'))
 
-        # Create new user
+        # Create new user with 0 budget
         user_id = str(uuid.uuid4())
         users[user_id] = {
             'id': user_id,
@@ -380,7 +392,7 @@ def register():
             'company': company,
             'email': email,
             'password': password,  # For demo, store plaintext
-            'budget': 100000  # Default budget
+            'budget': 0  # Changed from 100000 to 0
         }
 
         # Save users to storage
@@ -390,8 +402,8 @@ def register():
         print(f"Created new user: {users[user_id]}")
 
         session['user_id'] = user_id
-        flash('Registration successful!', 'success')
-        return redirect(url_for('dashboard'))
+        flash('Registration successful! Please add funds to your account.', 'success')
+        return redirect(url_for('profile'))  # Redirect to profile page instead of dashboard
 
     return render_template('register.html', user=get_user())
 
@@ -471,6 +483,14 @@ def update_profile():
     email = request.form.get('email')
     phone = request.form.get('phone')
 
+    # Debug prints
+    print(f"Update profile request: name={name}, company={company}, email={email}, phone={phone}")
+
+    # Basic validation
+    if not name or not company or not email:
+        flash('Name, company, and email are required fields.', 'error')
+        return redirect(url_for('profile'))
+
     # Update the user data
     user_id = user['id']
     if user_id in users:
@@ -491,7 +511,10 @@ def update_profile():
         users[user_id]['phone'] = phone
 
         # Save changes to file
-        storage.save_users(users)
+        save_result = storage.save_users(users)
+        if not save_result:
+            flash('There was an error saving your profile. Please try again.', 'error')
+            return redirect(url_for('profile'))
 
         # Ensure we're still logged in with the same user_id
         if current_user_id:
@@ -507,50 +530,265 @@ def update_profile():
 
     return redirect(url_for('profile'))
 
+@app.route('/client_token')
+def client_token():
+    """Generate a client token for Braintree"""
+    user = get_user()
+    if not user:
+        return jsonify({'error': 'User not authenticated'}), 401
+
+    try:
+        # Generate a client token using the braintree_gateway
+        token = braintree_gateway.client_token.generate()
+        print(f"Successfully generated client token")
+        return jsonify({'client_token': token})
+    except Exception as e:
+        print(f"Error generating client token: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to generate client token: {str(e)}'}), 500
+
+# Update the add_funds route to use the correct gateway
+@app.route('/add_funds', methods=['POST'])
+def add_funds():
+    """Process payment and add funds to user account"""
+    user = get_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'User not authenticated'}), 401
+
+    data = request.json
+    payment_method_nonce = data.get('payment_method_nonce')
+    amount = data.get('amount')
+
+    # Debug prints for troubleshooting
+    print(f"Add funds request received: amount={amount}")
+    if payment_method_nonce:
+        print(f"Payment method nonce received (first 10 chars): {payment_method_nonce[:10]}...")
+
+    if not payment_method_nonce or not amount:
+        print("Missing required fields in add_funds request")
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+    try:
+        # Convert amount to float and validate
+        amount = float(amount)
+        if amount <= 0:
+            print(f"Invalid amount: {amount}")
+            return jsonify({'success': False, 'message': 'Invalid amount'}), 400
+
+        # Create a transaction in the sandbox using braintree_gateway
+        result = braintree_gateway.transaction.sale({
+            'amount': str(amount),
+            'payment_method_nonce': payment_method_nonce,
+            'options': {
+                'submit_for_settlement': True
+            }
+        })
+
+        print(f"Braintree result: is_success={result.is_success}")
+        
+        if result.is_success:
+            # Update user's budget in the database
+            user_id = user['id']
+            if user_id in users:
+                current_budget = float(users[user_id].get('budget', 0))
+                new_budget = current_budget + amount
+                users[user_id]['budget'] = new_budget
+                storage.save_users(users)
+
+                # Log the transaction
+                print(f"Transaction successful: User {user_id} added ${amount}. New budget: ${new_budget}")
+
+                return jsonify({
+                    'success': True,
+                    'transaction_id': result.transaction.id,
+                    'message': f'Successfully added ${amount} to your account',
+                    'new_budget': new_budget
+                })
+        else:
+            # Enhanced error handling
+            error_message = "Transaction failed"
+            if hasattr(result, 'message'):
+                error_message = result.message
+            
+            if hasattr(result, 'transaction') and result.transaction:
+                if hasattr(result.transaction, 'processor_response_text'):
+                    error_message = result.transaction.processor_response_text
+                print(f"Transaction ID: {result.transaction.id}")
+                print(f"Status: {result.transaction.status}")
+            
+            print(f"Transaction error: {error_message}")
+            
+            return jsonify({
+                'success': False,
+                'message': error_message
+            })
+    except ValueError:
+        print(f"Invalid amount format: {amount}")
+        return jsonify({
+            'success': False,
+            'message': 'Invalid amount format'
+        })
+    except Exception as e:
+        print(f"Error processing payment: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred while processing the payment: {str(e)}'
+        })
+
+@app.route('/process_auction_payment', methods=['POST'])
+def process_auction_payment():
+    """Process payment for won auction (simulation)"""
+    user = get_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'User not authenticated'}), 401
+
+    data = request.json
+    auction_id = data.get('auction_id')
+    amount = data.get('amount')
+
+    if not auction_id or not amount:
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+    try:
+        amount = float(amount)
+        user_id = user['id']
+        
+        # Check if user has sufficient funds
+        if user_id in users:
+            current_budget = float(users[user_id].get('budget', 0))
+            
+            if current_budget >= amount:
+                # Deduct the amount from user's budget
+                users[user_id]['budget'] = current_budget - amount
+                storage.save_users(users)
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Payment of ${amount} processed successfully',
+                    'new_balance': users[user_id]['budget']
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Insufficient funds'
+                })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'User not found'
+            })
+    except Exception as e:
+        print(f"Error processing auction payment: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing the payment'
+        })
+
+@app.route('/test_braintree')
+def test_braintree():
+    """Test route to verify Braintree configuration"""
+    try:
+        # Test creating a customer
+        result = braintree_gateway.customer.create({
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com"
+        })
+
+        if result.is_success:
+            # Delete the test customer
+            braintree_gateway.customer.delete(result.customer.id)
+            return jsonify({
+                'status': 'success',
+                'message': 'Braintree is properly configured'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Braintree configuration test failed',
+                'errors': [error.message for error in result.errors.deep_errors]
+            })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+@app.route('/test_braintree_simple')
+def test_braintree_simple():
+    """Simpler test route to verify basic Braintree configuration"""
+    try:
+        print("Starting Braintree test...")
+        print(f"Gateway type: {type(braintree_gateway)}")
+
+        # Test the simplest possible operation
+        token = braintree_gateway.client_token.generate()
+        print(f"Token generated successfully")
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Braintree client token generated successfully',
+            'has_token': len(token) > 0
+        })
+    except Exception as e:
+        print(f"Exception type: {type(e)}")
+        print(f"Exception message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
 @app.route('/game/<int:game_id>')
 def game_detail(game_id):
     user = get_user()
     if not user:
         flash('Please login first.', 'error')
         return redirect(url_for('login'))
-    
+
     game = next((g for g in upcoming_games if g['id'] == game_id), None)
     if not game:
         flash('Game not found.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Get user's strategies for this specific game
     user_game_strategies = {}
-    
+
     # Create a mapping of moment_id -> has_strategy for easy checking in the template
     moment_strategy_map = {}
-    
+
     # Initialize the strategy map for all moments WITH STRING KEYS
     for moment_id in moments:
         moment_strategy_map[str(moment_id)] = False
-    
+
     # Process user strategies
     for strat_id, strategy in strategies.items():
         if strategy['user_id'] == user['id'] and strategy['game_id'] == game_id:
             # Create a copy of the strategy to avoid modifying the original
             strategy_copy = dict(strategy)
-            
+
             # Get the moment_id and ensure we have both string and int versions
             moment_id = strategy_copy.get('moment_id')
             moment_id_str = str(moment_id)
-            
+
             try:
                 moment_id_int = int(moment_id) if isinstance(moment_id, str) else moment_id
             except ValueError:
                 moment_id_int = 0
-            
+
             # Store both versions in the strategy for consistent access
             strategy_copy['moment_id_int'] = moment_id_int
             strategy_copy['moment_id_str'] = moment_id_str
-            
+
             # KEY FIX: Set the moment as having a strategy using STRING key
             moment_strategy_map[moment_id_str] = True
-            
+
             # Add the moment name if available
             if moment_id_str in moments:
                 strategy_copy['moment_name'] = moments[moment_id_str]['name']
@@ -558,28 +796,28 @@ def game_detail(game_id):
                 strategy_copy['moment_name'] = moments[moment_id_int]['name']
             else:
                 strategy_copy['moment_name'] = "Unknown Moment"
-            
+
             # Add to user game strategies
             user_game_strategies[strat_id] = strategy_copy
-    
+
     # Add debug data to the template context
     debug_data = {
         'strategies_count': len(strategies),
         'user_game_strategies_count': len(user_game_strategies),
         'moment_strategy_map': moment_strategy_map
     }
-    
+
     # Add debug prints
     print(f"DEBUG: Moment strategy map: {moment_strategy_map}")
     print(f"DEBUG: Available moment IDs: {list(moments.keys())}")
     print(f"DEBUG: User strategies for this game: {user_game_strategies}")
-    
+
     # For each moment, print if it has a strategy
     print("DEBUG: Checking each moment's strategy status:")
     for moment_id, moment in moments.items():
         has_strategy = moment_strategy_map.get(str(moment_id), False)
         print(f"  - Moment {moment_id} ({moment.get('name')}): Has strategy = {has_strategy}")
-    
+
     return render_template('game_detail.html',
                           user=user,
                           game=game,
@@ -600,20 +838,20 @@ def moment_detail(moment_id):
     moment_id_str = str(moment_id)
     print(f"Looking for moment with ID: {moment_id} (string version: {moment_id_str})")
     print(f"Available moment keys: {list(moments.keys())}")
-    
+
     # Get the moment data - try both integer and string keys
     moment = moments.get(moment_id_str)
-    
+
     if not moment:
         print(f"Moment with ID {moment_id} (str: {moment_id_str}) not found in moments dictionary")
         flash('Moment not found.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Ensure the moment has an id field
     if 'id' not in moment:
         moment = dict(moment)  # Create a copy
         moment['id'] = moment_id  # Set the id
-    
+
     print(f"Found moment: {moment}")
 
     # Get user's strategies to determine which moments already have strategies
@@ -628,7 +866,7 @@ def moment_detail(moment_id):
         strategy_moment_id = strategy.get('moment_id')
         if isinstance(strategy_moment_id, str) and strategy_moment_id.isdigit():
             strategy_moment_id = int(strategy_moment_id)
-        
+
         if strategy_moment_id == moment_id:
             game_id = strategy.get('game_id')
             print(f"  Found matching strategy: {strat_id} for game {game_id}")
@@ -648,7 +886,7 @@ def test_moment_lookup(moment_id):
         'lookups': {},
         'raw_moments': {}
     }
-    
+
     # Test all keys in the dictionary
     for key in moments.keys():
         results['key_types'].append({
@@ -656,7 +894,7 @@ def test_moment_lookup(moment_id):
             'type': type(key).__name__
         })
         results['raw_moments'][str(key)] = moments[key]
-    
+
     # Try different lookup methods
     # 1. Direct lookup
     results['lookups']['direct'] = {
@@ -664,7 +902,7 @@ def test_moment_lookup(moment_id):
         'result': moments.get(moment_id),
         'found': moments.get(moment_id) is not None
     }
-    
+
     # 2. String conversion
     str_id = str(moment_id)
     results['lookups']['string'] = {
@@ -672,7 +910,7 @@ def test_moment_lookup(moment_id):
         'result': moments.get(str_id),
         'found': moments.get(str_id) is not None
     }
-    
+
     # 3. Integer conversion (if possible)
     try:
         int_id = int(moment_id)
@@ -687,7 +925,7 @@ def test_moment_lookup(moment_id):
             'result': None,
             'found': False
         }
-    
+
     # 4. Dictionary access syntax
     try:
         direct_result = moments[moment_id]
@@ -710,20 +948,20 @@ def test_moment_lookup(moment_id):
             'found': False,
             'error': str(e)
         }
-    
+
     # 5. Find by internal id field
     internal_id_match = None
     for key, moment in moments.items():
         if str(moment.get('id', '')) == str(moment_id):
             internal_id_match = moment
             break
-    
+
     results['lookups']['internal_id'] = {
         'method': 'Internal id field match',
         'result': internal_id_match,
         'found': internal_id_match is not None
     }
-    
+
     return jsonify(results)
 
 @app.route('/debug_moments')
@@ -735,7 +973,7 @@ def debug_moments():
         'moment_keys_type': [],
         'game_details': []
     }
-    
+
     # Add details about each moment
     for moment_id, moment in moments.items():
         debug_output['moments'][str(moment_id)] = {
@@ -749,7 +987,7 @@ def debug_moments():
             'id': moment_id,
             'type': type(moment_id).__name__
         })
-    
+
     # Add game details
     for game in upcoming_games:
         debug_output['game_details'].append({
@@ -758,7 +996,7 @@ def debug_moments():
             'home': game.get('home'),
             'away': game.get('away')
         })
-    
+
     # Check if a test lookup works
     test_id = 1
     test_lookup = moments.get(test_id)
@@ -768,7 +1006,7 @@ def debug_moments():
         'found': test_lookup is not None,
         'result': test_lookup if test_lookup else 'Not found'
     }
-    
+
     # Return as JSON for easy inspection
     return jsonify(debug_output)
 
@@ -781,10 +1019,10 @@ def setup_strategy():
 
     # Get moment_id parameter and fix the parsing issue
     moment_id_raw = request.args.get('moment_id', '')
-    
+
     # IMPORTANT FIX: Split by '?' to handle malformed URL parameters
     moment_id = moment_id_raw.split('?')[0]
-    
+
     print(f"Raw moment_id from URL: {moment_id_raw}")
     print(f"Cleaned moment_id: {moment_id}")
     print(f"Available moment keys: {list(moments.keys())}")
@@ -792,25 +1030,25 @@ def setup_strategy():
     # Get the moment data - try using string key
     moment = moments.get(moment_id)
     print(f"Lookup result: {moment}")
-    
+
     if not moment:
         print(f"Moment with ID {moment_id} not found in moments dictionary")
         flash(f'Moment not found. Please select a valid moment.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Create a new moment dictionary with id explicitly set
     processed_moment = dict(moment)  # Create a copy to avoid modifying the original
     processed_moment['id'] = moment_id  # Make sure the id field exists
-    
+
     print(f"Processed moment for template: {processed_moment}")
-    
+
     # Get game_id directly from request.args
     selected_game_id = request.args.get('game_id')
     try:
         selected_game_id = int(selected_game_id) if selected_game_id else None
     except ValueError:
         selected_game_id = None
-    
+
     # Check if there's an existing strategy for this moment and user
     existing_strategy = None
     for strat_id, strategy in strategies.items():
@@ -833,7 +1071,7 @@ def setup_strategy():
         period_restrictions = request.form.get('period_restrictions')
         ad_content = request.form.get('ad_content')
         specific_scenario = request.form.get('specific_scenario')
-        
+
         # Validate required fields
         if not all([game_id, base_bid, max_bid]):
             flash('All required fields must be filled out.', 'error')
@@ -848,13 +1086,13 @@ def setup_strategy():
         except ValueError:
             flash('Invalid numeric values.', 'error')
             return redirect(url_for('setup_strategy', moment_id=moment_id, game_id=selected_game_id))
-        
+
         # Generate a unique ID for the new strategy if it doesn't exist
         if existing_strategy:
             strategy_id = existing_strategy['id']
         else:
             strategy_id = str(uuid.uuid4())
-        
+
         # Create or update strategy
         new_strategy = {
             'moment_id': moment_id,  # Store as string to match dictionary keys
@@ -870,23 +1108,23 @@ def setup_strategy():
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'status': 'active'  # Default to active
         }
-        
+
         # Add specific scenario for overtime/shootout goals
         if processed_moment['name'] == 'Overtime Goal/Shootout' and specific_scenario:
             new_strategy['specific_scenario'] = specific_scenario
-        
+
         # Add to strategies dictionary
         strategies[strategy_id] = new_strategy
-        
+
         # Save changes to file
         storage.save_strategies(strategies)
-        
+
         # Debug print
         print(f"{'Updated' if existing_strategy else 'Created new'} strategy: (ID: {strategy_id})")
         print(f"Strategy details: {new_strategy}")
-        
+
         flash(f"Bidding strategy {'updated' if existing_strategy else 'created'} successfully!", 'success')
-        
+
         # Redirect back to the game detail page if we have a game_id
         if game_id:
             return redirect(url_for('game_detail', game_id=game_id))
@@ -901,10 +1139,10 @@ def setup_strategy():
     print(f"moment id type: {type(processed_moment.get('id'))}")
     print(f"moment name: {processed_moment.get('name')}")
     print("=================================")
-    
+
     # Return the template with our processed moment
-    return render_template('setup_strategy.html', 
-                          user=user, 
+    return render_template('setup_strategy.html',
+                          user=user,
                           moment=processed_moment,  # Use the processed copy
                           moments=moments,
                           upcoming_games=upcoming_games,
@@ -917,30 +1155,30 @@ def delete_strategy(strategy_id):
     if not user:
         flash('Please login first.', 'error')
         return redirect(url_for('login'))
-    
+
     # Get redirect_game_id from query parameters
     redirect_game_id = request.args.get('redirect_game_id')
-    
+
     # Check if strategy exists
     if strategy_id in strategies:
         strategy = strategies[strategy_id]
         game_id = strategy.get('game_id')  # Get game_id from the strategy itself
-        
+
         # Check if user owns this strategy
         if strategy.get('user_id') == user['id']:
             # Delete the strategy
             del strategies[strategy_id]
-            
+
             # Save changes to file
             storage.save_strategies(strategies)
-            
+
             flash('Strategy removed successfully!', 'success')
         else:
             flash('You do not have permission to delete this strategy.', 'error')
     else:
         flash('Strategy not found.', 'error')
         return redirect(url_for('dashboard'))
-    
+
     # Redirect to game detail if we have a game_id
     if game_id:
         return redirect(url_for('game_detail', game_id=game_id))
@@ -1003,22 +1241,22 @@ def remove_strategy(strategy_id):
     if not user:
         flash('Please login first.', 'error')
         return redirect(url_for('login'))
-    
+
     # Find the strategy to get the game_id before deletion
     if strategy_id in strategies:
         strategy = strategies[strategy_id]
         game_id = strategy.get('game_id')
-        
+
         # Check if user owns this strategy
         if strategy.get('user_id') == user['id']:
             # Delete the strategy
             del strategies[strategy_id]
-            
+
             # Save changes to file
             storage.save_strategies(strategies)
-            
+
             flash('Strategy removed successfully!', 'success')
-            
+
             # Redirect to game detail if we have a game_id
             if game_id:
                 return redirect(url_for('game_detail', game_id=game_id))
@@ -1026,7 +1264,7 @@ def remove_strategy(strategy_id):
             flash('You do not have permission to delete this strategy.', 'error')
     else:
         flash('Strategy not found.', 'error')
-    
+
     # If no game_id or strategy not found, redirect to dashboard
     return redirect(url_for('dashboard'))
 
@@ -1066,8 +1304,6 @@ def simulate_auction():
         results[0]['winner'] = True
 
     return {'results': results}
-
-# Removed duplicate toggle_strategy_status route
 
 @app.route('/api/debug_info')
 def debug_info():
@@ -1149,5 +1385,5 @@ if __name__ == '__main__':
     storage.save_data(moments, storage.MOMENTS_FILE)
     storage.save_data(upcoming_games, storage.GAMES_FILE)
     storage.save_data(sponsors, storage.SPONSORS_FILE)
-    
+
     app.run(debug=True, host='0.0.0.0', port=5000)

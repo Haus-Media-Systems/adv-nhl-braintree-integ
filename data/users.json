@@ -5,7 +5,10 @@
     "company": "SportsDrink Co.",
     "email": "john@example.com",
     "password": "password123",
-    "budget": 50000
+    "budget": 50000,
+    "total_budget": 50000.0,
+    "used_budget": 7000.0,
+    "available_budget": 43000.0
   },
   "2": {
     "id": "2",
@@ -14,5 +17,43 @@
     "email": "jane@example.com",
     "password": "password123",
     "budget": 75000
+  },
+  "8bbadb9f-f494-403e-930e-a3f965fdc665": {
+    "id": "8bbadb9f-f494-403e-930e-a3f965fdc665",
+    "name": "Jim Smith",
+    "company": "Smith Co",
+    "email": "smith@smithco.com",
+    "password": "xxx",
+    "budget": 100000
+  },
+  "3f3d87d1-380b-4a89-8a13-b0624045315d": {
+    "id": "3f3d87d1-380b-4a89-8a13-b0624045315d",
+    "name": "Bob",
+    "company": "Bob Co",
+    "email": "bob@gmail.com",
+    "password": "bobpw",
+    "budget": 100000,
+    "total_budget": 100000.0,
+    "used_budget": 0,
+    "available_budget": 100000.0
+  },
+  "ed2e0e54-1dcd-48de-a048-68d172513dd1": {
+    "id": "ed2e0e54-1dcd-48de-a048-68d172513dd1",
+    "name": "New",
+    "company": "User",
+    "email": "newuser@gmail.com",
+    "password": "newuser",
+    "budget": 100000
+  },
+  "f6cfa9a0-64a7-41a3-a095-5e23ef2ccb18": {
+    "id": "f6cfa9a0-64a7-41a3-a095-5e23ef2ccb18",
+    "name": "Jake",
+    "company": "Jake Co",
+    "email": "jake@jakeco.com",
+    "password": "jakepw",
+    "budget": 20000.0,
+    "total_budget": 0.0,
+    "used_budget": 0,
+    "available_budget": 0
   }
 }
