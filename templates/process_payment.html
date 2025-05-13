@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Payment - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+<li class="breadcrumb-item"><a href="{{ url_for('auction_listings') }}">Auctions</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('auction_detail', auction_id=auction.id) }}">Auction Details</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Process Payment</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Complete Your Auction Payment</h1>
+            <p class="lead">Finalize your winning bid for the {{ auction.moment_id }} moment</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Payment Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You're paying for your winning bid on the 
+                        {% set moment = moments.get(auction.moment_id, {}) %}
+                        <strong>{{ moment.get('name', 'Unknown Moment') }}</strong> moment in the 
+                        {% set game = None %}
+                        {% for g in upcoming_games %}
+                            {% if g.id == auction.game_id %}
+                                {% set game = g %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if game %}
+                            <strong>{{ game.away }} @ {{ game.home }}</strong> game.
+                        {% else %}
+                            game (ID: {{ auction.game_id }}).
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Payment Summary</h5>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Winning Bid Amount:</th>
+                                    <td class="text-end">${{ "{:,.2f}".format(result.winning_amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Processing Fee:</th>
+                                    <td class="text-end">$0.00</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th>Total Payment:</th>
+                                    <td class="text-end fw-bold">${{ "{:,.2f}".format(result.winning_amount) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i> This is a demo payment form using Braintree Sandbox. No real payments will be processed.
+                    </div>
+
+                    <form id="payment-form" method="POST" action="{{ url_for('process_auction_payment_route', result_id=result.id) }}">
+                        <div id="payment-form-container">
+                            <div id="dropin-container"></div>
+                            <div class="text-center" id="payment-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>Loading payment form...</p>
+                            </div>
+                            <input type="hidden" id="payment_method_nonce" name="payment_method_nonce">
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button id="submit-button" type="submit" class="btn btn-primary btn-lg" disabled>
+                                <i class="fas fa-credit-card me-2"></i> Complete Payment
+                            </button>
+                            <a href="{{ url_for('auction_detail', auction_id=auction.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">Ad Information</h4>
+                </div>
+                <div class="card-body">
+                    <p>Your advertisement will be displayed during {{ moment.get('name', 'Unknown Moment') }} moments in the selected game.</p>
+                    
+                    <p><strong>Estimated Impressions:</strong> 500,000+</p>
+                    <p><strong>Estimated View Duration:</strong> 5-7 seconds</p>
+                    <p><strong>Ad Format:</strong> Overlay with sound</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Upon successful payment, you'll receive instructions for uploading your ad content.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Need Help?</h4>
+                </div>
+                <div class="card-body">
+                    <p>If you need assistance with your payment, please contact our support team:</p>
+                    <p><i class="fas fa-envelope me-2"></i> support@nhlbidding.com</p>
+                    <p><i class="fas fa-phone me-2"></i> (555) 123-4567</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://js.braintreegateway.com/web/dropin/1.33.0/js/dropin.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch client token from server
+        fetch("{{ url_for('client_token') }}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.client_token) {
+                    return initializeBraintree(data.client_token);
+                } else {
+                    throw new Error('Failed to get client token');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('payment-loading').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i> Failed to load payment form. Please refresh the page or try again later.
+                    </div>
+                `;
+            });
+        
+        // Initialize Braintree Drop-in UI
+        function initializeBraintree(clientToken) {
+            braintree.dropin.create({
+                authorization: clientToken,
+                container: '#dropin-container',
+                paypal: {
+                    flow: 'vault'
+                },
+                venmo: {
+                    allowDesktop: true,
+                    allowNewBrowserTab: false
+                }
+            }, function(createErr, instance) {
+                if (createErr) {
+                    console.error('Error creating Drop-in:', createErr);
+                    document.getElementById('payment-loading').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i> Failed to load payment form. Please refresh the page or try again later.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Hide loading indicator and enable submit button
+                document.getElementById('payment-loading').style.display = 'none';
+                document.getElementById('submit-button').disabled = false;
+                
+                // Handle form submission
+                document.getElementById('payment-form').addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    
+                    // Show loading state
+                    document.getElementById('submit-button').disabled = true;
+                    document.getElementById('submit-button').innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Processing Payment...
+                    `;
+                    
+                    // Request payment method from Drop-in UI
+                    instance.requestPaymentMethod(function(err, payload) {
+                        if (err) {
+                            console.error('Error requesting payment method:', err);
+                            document.getElementById('submit-button').disabled = false;
+                            document.getElementById('submit-button').innerHTML = `
+                                <i class="fas fa-credit-card me-2"></i> Complete Payment
+                            `;
+                            
+                            alert('There was an error processing your payment. Please try again.');
+                            return;
+                        }
+                        
+                        // Add payment method nonce to form
+                        document.getElementById('payment_method_nonce').value = payload.nonce;
+                        
+                        // Submit form
+                        document.getElementById('payment-form').submit();
+                    });
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

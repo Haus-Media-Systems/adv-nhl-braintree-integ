@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Game Status Management - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('auction_listings') }}">Auctions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Game Management</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Game Status Management</h1>
+            <p class="lead">Control which games are live, pending, or finished</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> Auctions can only be executed when games are in "Live" status.
+            </div>
+        </div>
+    </div>
+
+    <!-- All Games in Live Status -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0"><i class="fas fa-circle me-2"></i> Live Games ({{ live_games|length }})</h4>
+    </div>
+    <div class="card-body">
+ <!-- Debug info -->
+        <div class="alert alert-info mb-3">
+            <strong>Debug: {{ live_games|length }} live games</strong>
+            <ul>
+                {% for game in live_games %}
+                <li>{{ game.away }} @ {{ game.home }} (ID: {{ game.id }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        {% if live_games|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for game in live_games %}
+                        <tr>
+                            <td><strong>{{ game.away }} @ {{ game.home }}</strong></td>
+                            <td>{{ game.date }}</td>
+                            <td>{{ game.time }}</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-circle me-1"></i> Live
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-warning status-btn"
+                                            data-game-id="{{ game.id }}"
+                                            data-new-status="finished">
+                                        <i class="fas fa-stop-circle me-1"></i> Finish Game
+                                    </button>
+                                    <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i> View Game
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                <p>No games are currently live</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+    <!-- All Games in Pending Status -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0"><i class="fas fa-clock me-2"></i> Pending Games ({{ all_games|selectattr('status', 'equalto', 'pending')|list|length }})</h4>
+        </div>
+        <div class="card-body">
+ <!-- Debug info -->
+        <div class="alert alert-info mb-3">
+            <strong>Debug: {{ live_games|length }} live games</strong>
+            <ul>
+                {% for game in live_games %}
+                <li>{{ game.away }} @ {{ game.home }} (ID: {{ game.id }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+            {% set pending_count = 0 %}
+            {% for game in all_games %}
+                {% if game.status == 'pending' %}
+                    {% set pending_count = pending_count + 1 %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if pending_count > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in all_games %}
+                                {% if game.status == 'pending' %}
+                                <tr>
+                                    <td><strong>{{ game.away }} @ {{ game.home }}</strong></td>
+                                    <td>{{ game.date }}</td>
+                                    <td>{{ game.time }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-clock me-1"></i> Pending
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-success status-btn"
+                                                    data-game-id="{{ game.id }}"
+                                                    data-new-status="live">
+                                                <i class="fas fa-play-circle me-1"></i> Start Game
+                                            </button>
+                                            <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i> View Game
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-clock fa-3x mb-3"></i>
+                    <p>No pending games</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- All Games in Finished Status -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i> Finished Games ({{ all_games|selectattr('status', 'equalto', 'finished')|list|length }})</h4>
+        </div>
+        <div class="card-body">
+ <!-- Debug info -->
+        <div class="alert alert-info mb-3">
+            <strong>Debug: {{ live_games|length }} live games</strong>
+            <ul>
+                {% for game in live_games %}
+                <li>{{ game.away }} @ {{ game.home }} (ID: {{ game.id }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+            {% set finished_count = 0 %}
+            {% for game in all_games %}
+                {% if game.status == 'finished' %}
+                    {% set finished_count = finished_count + 1 %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if finished_count > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in all_games %}
+                                {% if game.status == 'finished' %}
+                                <tr>
+                                    <td><strong>{{ game.away }} @ {{ game.home }}</strong></td>
+                                    <td>{{ game.date }}</td>
+                                    <td>{{ game.time }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-check-circle me-1"></i> Finished
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-warning status-btn"
+                                                    data-game-id="{{ game.id }}"
+                                                    data-new-status="live"
+                                                    onclick="return confirm('Restarting a finished game. Are you sure?');">
+                                                <i class="fas fa-redo me-1"></i> Restart Game
+                                            </button>
+                                            <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i> View Game
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-archive fa-3x mb-3"></i>
+                    <p>No finished games</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status change buttons
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const gameId = this.dataset.gameId;
+            const newStatus = this.dataset.newStatus;
+
+            // Make API call to update status
+            fetch(`/admin/game/${gameId}/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show updated status
+                    window.location.reload();
+                } else {
+                    alert('Failed to update game status: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the game status.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

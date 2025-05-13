@@ -52,8 +52,40 @@
     "email": "jake@jakeco.com",
     "password": "jakepw",
     "budget": 20000.0,
-    "total_budget": 0.0,
-    "used_budget": 0,
-    "available_budget": 0
+    "total_budget": 20000.0,
+    "used_budget": 7000.0,
+    "available_budget": 13000.0
+  },
+  "admin": {
+    "id": "admin",
+    "name": "Administrator",
+    "company": "NHL Bidding Platform",
+    "email": "admin@gmail.com",
+    "password": "admin",
+    "budget": 0,
+    "is_admin": true
+  },
+  "eedae96e-36e7-4014-b6c8-1af9b04d2853": {
+    "id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "name": "Phil",
+    "company": "Phil Co",
+    "email": "phil@philco.com",
+    "password": "philpw",
+    "budget": 35000.0,
+    "total_budget": 35000.0,
+    "used_budget": 8000.0,
+    "available_budget": 27000.0
+  },
+  "1a031094-9e0f-4e4e-9667-b134f9a9fdbe": {
+    "id": "1a031094-9e0f-4e4e-9667-b134f9a9fdbe",
+    "name": "Susie",
+    "company": "Susie Co",
+    "email": "susie@susieco.com",
+    "password": "susiepw",
+    "budget": 56000.0,
+    "total_budget": 31000.0,
+    "used_budget": 30500.0,
+    "available_budget": 500.0,
+    "is_admin": false
   }
 }

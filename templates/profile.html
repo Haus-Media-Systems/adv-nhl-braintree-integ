@@ -3,193 +3,400 @@
 {% block title %}My Profile - NHL Instant Replay Bidding{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <!-- Header Section -->
+<div class="container">
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>My Profile</h1>
-            <p class="lead">Manage your account information and budget</p>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3">
-                            <i class="fas fa-wallet fa-3x"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">Available Budget</h6>
-                            <h2 class="mb-0" id="available-budget">${{ "{:,.2f}".format(user.available_budget) }}</h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+                </ol>
+            </nav>
         </div>
     </div>
 
     <div class="row">
-        <!-- User Information Section -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
+        <!-- Profile Info and Payments -->
+        <div class="col-md-4">
+            <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="fas fa-user-circle me-2 text-white"></i>Account Information</h4>
+                    <h4 class="mb-0">Profile Information</h4>
                 </div>
                 <div class="card-body">
-                    <form id="profile-form" action="{{ url_for('update_profile') }}" method="POST">
+                    <form method="POST" action="{{ url_for('update_profile') }}">
                         <div class="mb-3">
-                            <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <label for="name" class="form-label">Name</label>
                             <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="company" class="form-label">Company <span class="text-danger">*</span></label>
+                            <label for="company" class="form-label">Company</label>
                             <input type="text" class="form-control" id="company" name="company" value="{{ user.company }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.get('phone', '') }}">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone if user.phone else '' }}" placeholder="Optional">
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Save Changes
-                        </button>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
                     </form>
                 </div>
             </div>
-        </div>
 
-        <!-- Budget Management Section -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="fas fa-money-bill-wave me-2 text-white"></i>Budget Management</h4>
+            <!-- Budget and Payment Information -->
+            <div class="card mb-4" id="budget">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Budget Management</h4>
                 </div>
                 <div class="card-body">
-                    <div class="budget-summary mb-4">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="text-muted">Total Budget</h6>
-                                        <h4 class="mb-0" id="total-budget">${{ "{:,.2f}".format(user.total_budget) }}</h4>
-                                    </div>
+                    <h5>Budget Overview</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="progress" style="height: 30px;">
+                                {% set spent_percentage = (user.spent_budget / user.total_budget * 100) if user.total_budget > 0 else 0 %}
+                                {% set allocated_percentage = (user.allocated_budget / user.total_budget * 100) if user.total_budget > 0 else 0 %}
+                                {% set available_percentage = (user.available_budget / user.total_budget * 100) if user.total_budget > 0 else 0 %}
+                                
+                                <div class="progress-bar bg-danger" style="width: {{ spent_percentage }}%" 
+                                     data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Spent: ${{ '{:,.2f}'.format(user.spent_budget) }}">
+                                    {% if spent_percentage >= 10 %}Spent{% endif %}
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="text-muted">In Use</h6>
-                                        <h4 class="mb-0" id="used-budget">${{ "{:,.2f}".format(user.used_budget) }}</h4>
-                                    </div>
+                                <div class="progress-bar bg-warning" style="width: {{ allocated_percentage }}%" 
+                                     data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Allocated: ${{ '{:,.2f}'.format(user.allocated_budget) }}">
+                                    {% if allocated_percentage >= 10 %}Allocated{% endif %}
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="text-muted">Available</h6>
-                                        <h4 class="mb-0" id="available-budget-box">${{ "{:,.2f}".format(user.available_budget) }}</h4>
-                                    </div>
+                                <div class="progress-bar bg-success" style="width: {{ available_percentage }}%" 
+                                     data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Available: ${{ '{:,.2f}'.format(user.available_budget) }}">
+                                    {% if available_percentage >= 10 %}Available{% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Total Budget:</strong></td>
+                            <td>${{ "{:,.2f}".format(user.total_budget) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Allocated to Strategies:</strong></td>
+                            <td class="text-warning">${{ "{:,.2f}".format(user.allocated_budget) }}</td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="ps-4"><em>Actually Spent (Paid Wins):</em></td>
+                            <td class="text-danger">${{ "{:,.2f}".format(user.spent_budget) }}</td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="ps-4"><em>Pending Payments:</em></td>
+                            <td class="text-warning">${{ "{:,.2f}".format(user.pending_win_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Available for New Strategies:</strong></td>
+                            <td class="text-success fw-bold">${{ "{:,.2f}".format(user.available_budget) }}</td>
+                        </tr>
+                    </table>
 
+                    <!-- Pending Payments Alert -->
+                    {% if user.pending_wins > 0 %}
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Action Required</h6>
+                        <p>You have <strong>{{ user.pending_wins }}</strong> unpaid winning bid{{ 's' if user.pending_wins > 1 else '' }} 
+                           totaling <strong>${{ "{:,.2f}".format(user.pending_win_amount) }}</strong>.</p>
+                        <a href="{{ url_for('auction_listings') }}" class="btn btn-warning">
+                            <i class="fas fa-credit-card me-1"></i> Pay Pending Wins
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    
                     <h5>Add Funds</h5>
-                    <div class="mb-4">
-                        <div class="form-group mb-3">
-                            <label for="amount" class="form-label">Amount to Add <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="amount" placeholder="0.00" min="100" step="100" value="1000">
-                                <div class="invalid-feedback">Please enter an amount of at least $100</div>
-                            </div>
-                        </div>
-
-                        <!-- Braintree Drop-in UI Container -->
-                        <div id="dropin-container" class="mb-3"></div>
-                        <div id="payment-status" class="alert alert-info d-none mb-3">
-                            <i class="fas fa-spinner fa-spin me-2"></i> Initializing payment system...
-                        </div>
-
-                        <button type="button" class="btn btn-success mb-3 w-100" id="submit-button" disabled>
-                            <i class="fas fa-credit-card me-1"></i> Add Funds
-                        </button>
-                    </div>
-
-                    <h5>Payment Methods</h5>
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>You can use the following test card for sandbox testing:
-                        <ul class="mb-0 mt-2">
-                            <li>Card Number: 4111-1111-1111-1111</li>
-                            <li>Expiration: Any future date</li>
-                            <li>CVV: 123</li>
-                        </ul>
+                        <strong>Sandbox Test Card:</strong><br>
+                        Card Number: 4111 1111 1111 1111<br>
+                        Expiry: Any future date<br>
+                        CVV: Any 3 digits
                     </div>
+                    
+                    <div id="payment-form">
+                        <div id="dropin-container"></div>
+                        <button id="submit-button" class="btn btn-success mt-3">Add Funds</button>
+                    </div>
+                    
+                    <script src="https://js.braintreegateway.com/web/dropin/1.33.4/js/dropin.min.js"></script>
+                    <script>
+                        // Initialize Braintree payment form
+                        fetch('/client_token')
+                            .then(response => response.json())
+                            .then(data => {
+                                return braintree.dropin.create({
+                                    authorization: data.client_token,
+                                    container: '#dropin-container',
+                                    card: {
+                                        cardholderName: {
+                                            required: true
+                                        }
+                                    }
+                                });
+                            })
+                            .then(instance => {
+                                document.getElementById('submit-button').addEventListener('click', () => {
+                                    instance.requestPaymentMethod()
+                                        .then(payload => {
+                                            // Show amount input when payment method is ready
+                                            const amount = prompt('Enter amount to add to your account:', '1000');
+                                            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                                                fetch('/add_funds', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                    },
+                                                    body: JSON.stringify({
+                                                        payment_method_nonce: payload.nonce,
+                                                        amount: parseFloat(amount)
+                                                    }),
+                                                })
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        alert('Funds added successfully!');
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert('Payment failed: ' + data.message);
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    console.error('Error:', error);
+                                                    alert('An error occurred while processing your payment.');
+                                                });
+                                            }
+                                        })
+                                        .catch(err => {
+                                            console.error('Payment request failed:', err);
+                                            alert('Failed to process payment method. Please try again.');
+                                        });
+                                });
+                            })
+                            .catch(err => {
+                                console.error('Dropin creation failed:', err);
+                            });
+                    </script>
                 </div>
             </div>
         </div>
 
-        <!-- Bidding History Section -->
-        <div class="col-12 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="fas fa-history me-2 text-white"></i>Bidding History</h4>
+        <!-- Auction Performance & Wins -->
+        <div class="col-md-8">
+            <!-- Performance Summary -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white text-center">
+                        <div class="card-body">
+                            <h6>Total Strategies</h6>
+                            <h3>{{ user_strategies|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white text-center">
+                        <div class="card-body">
+                            <h6>Total Wins</h6>
+                            <h3>{{ user_auction_results|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white text-center">
+                        <div class="card-body">
+                            <h6>Actually Spent</h6>
+                            <h3>${{ "{:,.2f}".format(user.spent_budget) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white text-center">
+                        <div class="card-body">
+                            <h6>Pending Payments</h6>
+                            <h3>${{ "{:,.2f}".format(user.pending_win_amount) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Wins Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">My Auction Wins</h4>
+                    <a href="{{ url_for('my_strategies') }}#wins-tab" class="btn btn-sm btn-light">View All Wins</a>
                 </div>
                 <div class="card-body">
-                    {% if user_strategies|length > 0 %}
+                    {% if user_auction_results %}
+                        <!-- Date Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <form class="d-flex gap-2" id="profileDateFilterForm">
+                                    <input type="date" class="form-control" id="profileStartDate" name="start_date">
+                                    <input type="date" class="form-control" id="profileEndDate" name="end_date">
+                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="profileClearFilter">Clear</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Wins Table -->
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover" id="profileWinsTable">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Date</th>
                                         <th>Game</th>
                                         <th>Moment</th>
-                                        <th>Bid Amount</th>
-                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Payment Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for strategy_id, strategy in user_strategies.items() %}
-                                    <tr>
-                                        <td>{{ strategy.get('created_at', 'N/A') }}</td>
-                                        <td>
-                                            {% for g in upcoming_games %}
-                                                {% if g.id == strategy.game_id %}
-                                                    {{ g.away }} @ {{ g.home }}
+                                    {% for result in user_auction_results|sort(attribute='created_at', reverse=True) %}
+                                        <tr data-date="{{ result.created_at }}" class="{% if result.payment_status == 'pending' %}table-warning{% endif %}">
+                                            <td>{{ result.created_at[:10] }}</td>
+                                            <td>
+                                                {% set auction = auctions.get(result.auction_id, {}) %}
+                                                {% set game = None %}
+                                                {% for g in upcoming_games %}
+                                                    {% if g.id == auction.game_id %}
+                                                        {% set game = g %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if game %}
+                                                    {{ game.away }} @ {{ game.home }}
+                                                {% else %}
+                                                    Unknown Game
                                                 {% endif %}
-                                            {% endfor %}
-                                        </td>
-                                        <td>
-                                            {% set moment_id_str = strategy.moment_id|string %}
-                                            {% if moment_id_str in moments %}
-                                                {{ moments[moment_id_str].name }}
-                                            {% elif strategy.moment_id in moments %}
-                                                {{ moments[strategy.moment_id].name }}
-                                            {% else %}
-                                                Unknown Moment
-                                            {% endif %}
-                                        </td>
-                                        <td>${{ "{:,.2f}".format(strategy.max_bid) }}</td>
-                                        <td>
-                                            {% if strategy.get('status') == 'inactive' %}
-                                                <span class="badge bg-secondary">Inactive</span>
-                                            {% else %}
-                                                <span class="badge bg-success">Active</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            <td>
+                                                {% set moment = moments.get(auction.moment_id, {}) %}
+                                                <span class="badge bg-secondary">{{ moment.get('name', 'Unknown') }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="{% if result.payment_status == 'completed' %}text-danger{% else %}text-warning{% endif %} fw-bold">
+                                                    ${{ "{:,.2f}".format(result.winning_amount) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if result.payment_status == 'completed' %}bg-success
+                                                                  {% elif result.payment_status == 'pending' %}bg-warning
+                                                                  {% else %}bg-danger{% endif %}">
+                                                    {{ result.payment_status|capitalize }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if result.payment_status == 'pending' %}
+                                                    <a href="{{ url_for('process_auction_payment_route', result_id=result.id) }}" class="btn btn-sm btn-warning">
+                                                        <i class="fas fa-credit-card me-1"></i> Pay Now
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{{ url_for('auction_detail', auction_id=result.auction_id) }}" class="btn btn-sm btn-outline-primary">
+                                                        View
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
-                            <h5>No Bidding History</h5>
-                            <p class="text-muted">You haven't set up any bidding strategies yet.</p>
-                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">Create Your First Strategy</a>
+                        <div class="text-center py-5">
+                            <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                            <h5>No Wins Yet</h5>
+                            <p class="text-muted">You haven't won any auctions yet. Start bidding to see your wins here!</p>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus me-1"></i> Create Bidding Strategy
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Active Strategies Quick View -->
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Active Strategies</h4>
+                    <a href="{{ url_for('my_strategies') }}" class="btn btn-sm btn-light">Manage Strategies</a>
+                </div>
+                <div class="card-body">
+                    {% if user_strategies %}
+                        {% set active_count = 0 %}
+                        {% for strat_id, strategy in user_strategies.items() %}
+                            {% if strategy.get('status') != 'inactive' %}
+                                {% set active_count = active_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="row g-3">
+                            {% for strat_id, strategy in user_strategies.items() %}
+                                {% if strategy.get('status') != 'inactive' %}
+                                    <div class="col-md-6">
+                                        <div class="card bg-light">
+                                            <div class="card-body py-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-0">
+                                                            {% if strategy.moment_id %}
+                                                                {% if moments[strategy.moment_id|string] %}
+                                                                    {{ moments[strategy.moment_id|string].name }}
+                                                                {% else %}
+                                                                    Unknown Moment
+                                                                {% endif %}
+                                                            {% else %}
+                                                                Unknown Moment
+                                                            {% endif %}
+                                                        </h6>
+                                                        <small class="text-muted">
+                                                            {% if strategy.game_id %}
+                                                                {% set game = None %}
+                                                                {% for g in upcoming_games %}
+                                                                    {% if g.id == strategy.game_id %}
+                                                                        {% set game = g %}
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                                {% if game %}
+                                                                    {{ game.away }} @ {{ game.home }}
+                                                                {% else %}
+                                                                    Unknown Game
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <small class="text-success">${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        {% if active_count == 0 %}
+                            <div class="text-center py-3">
+                                <p class="text-muted">No active strategies. All strategies are currently paused.</p>
+                                <a href="{{ url_for('my_strategies') }}" class="btn btn-outline-primary btn-sm">Manage Strategies</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted">You haven't created any bidding strategies yet.</p>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i> Create Strategy
+                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -198,208 +405,55 @@
     </div>
 </div>
 
-<!-- Toast for notifications -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="paymentToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto">Payment Status</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body"></div>
-    </div>
-</div>
-
-<!-- Braintree Integration -->
-<script src="https://js.braintreegateway.com/web/dropin/1.44.1/js/dropin.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const submitButton = document.getElementById('submit-button');
-    const amountInput = document.getElementById('amount');
-    const paymentStatus = document.getElementById('payment-status');
-    let dropinInstance;
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Handle date filtering in profile
+    const dateFilterForm = document.getElementById('profileDateFilterForm');
+    const clearFilterBtn = document.getElementById('profileClearFilter');
+    const winsTable = document.getElementById('profileWinsTable');
 
-    // Show payment status
-    paymentStatus.classList.remove('d-none');
-    paymentStatus.classList.add('d-block');
+    if (dateFilterForm && winsTable) {
+        dateFilterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    // Initialize Braintree Drop-in UI
-    function initializeBraintree() {
-        console.log("Initializing Braintree...");
-        
-        fetch('/client_token')
-            .then(response => {
-                console.log("Client token response status:", response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log("Client token received:", data.client_token ? "Success" : "Failed");
-                
-                if (data.error) {
-                    console.error('Error fetching client token:', data.error);
-                    paymentStatus.classList.remove('alert-info');
-                    paymentStatus.classList.add('alert-danger');
-                    paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error initializing payment system';
-                    return;
+            const startDate = document.getElementById('profileStartDate').value;
+            const endDate = document.getElementById('profileEndDate').value;
+            const rows = winsTable.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const rowDate = row.getAttribute('data-date');
+                const rowDateObj = new Date(rowDate);
+
+                let show = true;
+
+                if (startDate && new Date(startDate) > rowDateObj) {
+                    show = false;
                 }
 
-                // Hide status once we start creating the drop-in
-                paymentStatus.classList.add('d-none');
-                
-                braintree.dropin.create({
-                    authorization: data.client_token,
-                    container: '#dropin-container',
-                    card: {
-                        cardholderName: {
-                            required: false
-                        }
-                    }
-                }, function (createErr, instance) {
-                    if (createErr) {
-                        console.error('Error creating Drop-in:', createErr);
-                        paymentStatus.classList.remove('d-none', 'alert-info');
-                        paymentStatus.classList.add('alert-danger');
-                        paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error initializing payment form';
-                        return;
-                    }
-
-                    console.log("Braintree Drop-in created successfully");
-                    dropinInstance = instance;
-                    submitButton.disabled = false;
-                    
-                    // Enable the submit button if the user has a payment method
-                    instance.on('paymentMethodRequestable', function (event) {
-                        console.log("Payment method requestable:", event);
-                        submitButton.disabled = false;
-                    });
-
-                    // Disable the submit button if the user doesn't have a payment method
-                    instance.on('noPaymentMethodRequestable', function () {
-                        console.log("No payment method requestable");
-                        submitButton.disabled = true;
-                    });
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching client token:', error);
-                paymentStatus.classList.remove('alert-info');
-                paymentStatus.classList.add('alert-danger');
-                paymentStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error connecting to payment system';
-            });
-    }
-
-    // Validate amount input
-    amountInput.addEventListener('input', function() {
-        const amount = parseFloat(this.value);
-        if (amount < 100) {
-            this.classList.add('is-invalid');
-        } else {
-            this.classList.remove('is-invalid');
-        }
-    });
-
-    // Handle payment submission
-    submitButton.addEventListener('click', function() {
-        const amount = amountInput.value;
-
-        if (!amount || parseFloat(amount) < 100) {
-            showToast('Please enter an amount of at least $100', 'error');
-            amountInput.classList.add('is-invalid');
-            return;
-        }
-
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
-
-        dropinInstance.requestPaymentMethod(function (err, payload) {
-            if (err) {
-                console.error('Payment method error:', err);
-                showToast('Error processing payment method', 'error');
-                resetButton();
-                return;
-            }
-
-            console.log("Payment method received:", payload.type);
-
-            // Send payment to server
-            fetch('/add_funds', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    payment_method_nonce: payload.nonce,
-                    amount: amount
-                })
-            })
-            .then(response => {
-                console.log("Add funds response status:", response.status);
-                return response.json();
-            })
-            .then(result => {
-                console.log("Add funds result:", result);
-                
-                if (result.success) {
-                    showToast(`Successfully added $${amount} to your account!`, 'success');
-                    
-                    // Update budget displays if new_budget is available
-                    if (result.new_budget !== undefined) {
-                        updateBudgetDisplay(result.new_budget);
-                    }
-                    
-                    // Reload page after short delay to update budget
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
-                } else {
-                    showToast(result.message || 'Failed to process payment', 'error');
-                    resetButton();
+                if (endDate && new Date(endDate) < rowDateObj) {
+                    show = false;
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('An error occurred while processing your payment', 'error');
-                resetButton();
+
+                row.style.display = show ? '' : 'none';
             });
         });
-    });
 
-    // Update budget display without page reload
-    function updateBudgetDisplay(newBudget) {
-        const formatter = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2
+        clearFilterBtn.addEventListener('click', function() {
+            document.getElementById('profileStartDate').value = '';
+            document.getElementById('profileEndDate').value = '';
+
+            const rows = winsTable.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
         });
-        
-        const formattedBudget = formatter.format(newBudget);
-        
-        document.getElementById('total-budget').textContent = formattedBudget;
-        document.getElementById('available-budget').textContent = formattedBudget;
-        document.getElementById('available-budget-box').textContent = formattedBudget;
     }
-
-    // Show toast notification
-    function showToast(message, type) {
-        const toastEl = document.getElementById('paymentToast');
-        const toastBody = toastEl.querySelector('.toast-body');
-
-        toastBody.textContent = message;
-        toastEl.classList.remove('bg-success', 'bg-danger');
-        toastEl.classList.add(type === 'success' ? 'bg-success' : 'bg-danger');
-        toastEl.classList.add('text-white');
-
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
-    }
-
-    // Reset submit button
-    function resetButton() {
-        submitButton.disabled = false;
-        submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i> Add Funds';
-    }
-
-    // Initialize Braintree when page loads
-    initializeBraintree();
 });
 </script>
 {% endblock %}

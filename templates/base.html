@@ -200,6 +200,93 @@
         .list-group-item:hover {
             background-color: #f1f5f9;
         }
+
+        /* Game status indicators */
+        .game-status-live {
+            border-left: 4px solid #28a745;
+        }
+
+        .game-status-pending {
+            border-left: 4px solid #6c757d;
+        }
+
+        .game-status-finished {
+            border-left: 4px solid #007bff;
+        }
+
+        .status-pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #28a745;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        .game-card-live {
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.3) !important;
+        }
+
+        /* Live Game Banner Styles */
+        .live-game-banner {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .live-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: liveBlink 1s infinite;
+        }
+        
+        @keyframes liveBlink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .live-game-link:hover .badge {
+            background-color: #20c997 !important;
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+        
+        /* Adjust main content to account for live banner */
+        @media (max-width: 767px) {
+            .live-game-banner {
+                padding: 10px 0;
+            }
+            
+            .live-game-banner .d-flex {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -222,6 +309,18 @@
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
     </li>
+ <li class="nav-item">
+<a class="nav-link" href="{{ url_for('auction_listings') }}">Auctions</a>
+    </li>
+    <!-- Add admin game management link -->
+    {% if user.get('is_admin', False) %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_games') }}">Game Management</a>
+    </li>
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('admin_financials') }}">Financial Management</a>
+</li>
+    {% endif %}
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('my_strategies') }}">My Strategies</a>
     </li>
@@ -246,6 +345,41 @@
             </div>
         </div>
     </nav>
+
+    <!-- Live Game Header - Insert here after navigation and before Flash Messages -->
+    {% if user %}
+        {% set live_games = [] %}
+        {% for game in upcoming_games %}
+            {% if game.get('status') == 'live' %}
+                {% set _ = live_games.append(game) %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if live_games %}
+            <div class="live-game-banner">
+                <div class="container">
+                    <div class="d-flex align-items-center justify-content-between py-2">
+                        <div class="d-flex align-items-center">
+                            <span class="live-indicator"></span>
+                            <span class="fw-bold me-3">LIVE GAMES:</span>
+                            <div class="d-flex gap-3">
+                                {% for game in live_games %}
+                                    <a href="{{ url_for('game_detail', game_id=game.id) }}" class="live-game-link text-decoration-none text-white">
+                                        <span class="badge bg-success">{{ game.away }} @ {{ game.home }}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('auction_listings') }}" class="btn btn-sm btn-light">
+                                <i class="fas fa-gavel me-1"></i> View Active Auctions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
 
     <!-- Flash Messages -->
     <div class="container flash-message">

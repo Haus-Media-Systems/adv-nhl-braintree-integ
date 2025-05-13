@@ -1,0 +1,423 @@
+{
+  "15446a00-45e8-400d-abea-ef2761214421": {
+    "id": "15446a00-45e8-400d-abea-ef2761214421",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:21:43",
+    "updated_at": "2025-05-07 12:21:43",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:21:43",
+    "winner_notified": false
+  },
+  "6f2b4104-1823-4402-b0d0-cda59c6c295e": {
+    "id": "6f2b4104-1823-4402-b0d0-cda59c6c295e",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:30:51",
+    "updated_at": "2025-05-07 12:30:51",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-1"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:30:51",
+    "winner_notified": false
+  },
+  "8f7cb9b5-ff7f-4fa6-9952-1df845e45b1a": {
+    "id": "8f7cb9b5-ff7f-4fa6-9952-1df845e45b1a",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:35:05",
+    "updated_at": "2025-05-07 12:35:05",
+    "period": "1",
+    "team_id": "MTL",
+    "players": [
+      "MTL-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:35:05",
+    "winner_notified": false
+  },
+  "697b6676-bcc0-453c-b09e-ca708dd6e229": {
+    "id": "697b6676-bcc0-453c-b09e-ca708dd6e229",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:36:48",
+    "updated_at": "2025-05-07 12:36:48",
+    "period": "1",
+    "team_id": "MTL",
+    "players": [
+      "MTL-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:36:48",
+    "winner_notified": false
+  },
+  "59b1c994-4148-405d-850d-1879d5a0f282": {
+    "id": "59b1c994-4148-405d-850d-1879d5a0f282",
+    "moment_id": "2",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:40:38",
+    "updated_at": "2025-05-07 12:40:38",
+    "period": "1",
+    "team_id": "MTL",
+    "players": [
+      "MTL-4"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:40:38",
+    "winner_notified": false
+  },
+  "746026b2-670c-4ebb-8afa-66358f5b3de9": {
+    "id": "746026b2-670c-4ebb-8afa-66358f5b3de9",
+    "moment_id": "2",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:44:22",
+    "updated_at": "2025-05-07 12:44:22",
+    "period": "1",
+    "team_id": "MTL",
+    "players": [
+      "MTL-4"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:44:22",
+    "winner_notified": false
+  },
+  "9a56b822-f165-4b6b-8c0b-88ff4d5e123c": {
+    "id": "9a56b822-f165-4b6b-8c0b-88ff4d5e123c",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:47:09",
+    "updated_at": "2025-05-07 12:47:09",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-2"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:47:09",
+    "winner_notified": false
+  },
+  "86867cf6-6da4-4854-9d19-98dab7be604c": {
+    "id": "86867cf6-6da4-4854-9d19-98dab7be604c",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-07 12:49:08",
+    "updated_at": "2025-05-07 12:49:08",
+    "period": "1",
+    "team_id": "MTL",
+    "players": [
+      "MTL-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 12:49:08",
+    "winner_notified": false
+  },
+  "e079b01f-5d85-453c-8f59-f9897d4d1a97": {
+    "id": "e079b01f-5d85-453c-8f59-f9897d4d1a97",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 8000.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-07 14:07:33",
+    "updated_at": "2025-05-07 14:07:33",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-07 14:07:33",
+    "winner_notified": false
+  },
+  "1fd7e30f-78d2-43ed-a788-18841dbfe8e2": {
+    "id": "1fd7e30f-78d2-43ed-a788-18841dbfe8e2",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 8000.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:53:07",
+    "updated_at": "2025-05-08 15:53:07",
+    "period": "2",
+    "team_id": "TOR",
+    "players": [
+      "TOR-2"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:53:07",
+    "winner_notified": false
+  },
+  "33b133b2-d62d-4de7-b20b-d7c17a5f90bb": {
+    "id": "33b133b2-d62d-4de7-b20b-d7c17a5f90bb",
+    "moment_id": "2",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 4500.0,
+    "current_high_bidder_id": "f6cfa9a0-64a7-41a3-a095-5e23ef2ccb18",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:53:46",
+    "updated_at": "2025-05-08 15:53:46",
+    "period": "3",
+    "team_id": "MTL",
+    "players": [
+      "MTL-2"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:53:46",
+    "winner_notified": false
+  },
+  "1f8615d5-9379-41c4-a4f9-83853fcea06a": {
+    "id": "1f8615d5-9379-41c4-a4f9-83853fcea06a",
+    "moment_id": "3",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 3000.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:54:14",
+    "updated_at": "2025-05-08 15:54:14",
+    "period": "2",
+    "team_id": "both",
+    "players": [
+      "TOR-2",
+      "MTL-5"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:54:14",
+    "winner_notified": false
+  },
+  "878cc700-b726-45ad-975a-5f9ba8b30e2a": {
+    "id": "878cc700-b726-45ad-975a-5f9ba8b30e2a",
+    "moment_id": "4",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 10000.0,
+    "current_high_bidder_id": "1a031094-9e0f-4e4e-9667-b134f9a9fdbe",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:55:23",
+    "updated_at": "2025-05-08 15:55:23",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-4"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:55:23",
+    "winner_notified": false
+  },
+  "37fa8bf3-4dc2-4922-8955-fa784ba75681": {
+    "id": "37fa8bf3-4dc2-4922-8955-fa784ba75681",
+    "moment_id": "5",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 10000.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:56:21",
+    "updated_at": "2025-05-08 15:56:21",
+    "period": "OT",
+    "team_id": "MTL",
+    "players": [
+      "MTL-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:56:21",
+    "winner_notified": false
+  },
+  "ca32d332-4fdf-484e-b39f-298ccedb7eca": {
+    "id": "ca32d332-4fdf-484e-b39f-298ccedb7eca",
+    "moment_id": "6",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 4500.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-08 15:57:33",
+    "updated_at": "2025-05-08 15:57:33",
+    "period": "2",
+    "team_id": "TOR",
+    "players": [
+      "TOR-2"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-08 15:57:33",
+    "winner_notified": false
+  },
+  "4d36cd50-adb0-4407-8ca2-491ca487c587": {
+    "id": "4d36cd50-adb0-4407-8ca2-491ca487c587",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 5000.0,
+    "current_high_bidder_id": "eedae96e-36e7-4014-b6c8-1af9b04d2853",
+    "reserve_price": null,
+    "created_at": "2025-05-10 13:44:23",
+    "updated_at": "2025-05-10 13:44:23",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-4"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-10 13:44:23",
+    "winner_notified": false
+  },
+  "0ae36fbe-9db6-40f8-8455-6c176c77d09f": {
+    "id": "0ae36fbe-9db6-40f8-8455-6c176c77d09f",
+    "moment_id": "2",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 4000.0,
+    "current_high_bidder_id": "f6cfa9a0-64a7-41a3-a095-5e23ef2ccb18",
+    "reserve_price": null,
+    "created_at": "2025-05-10 13:45:05",
+    "updated_at": "2025-05-10 13:45:05",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-1"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-10 13:45:05",
+    "winner_notified": false
+  },
+  "460c52a4-af09-41a6-a572-9cb236525bd7": {
+    "id": "460c52a4-af09-41a6-a572-9cb236525bd7",
+    "moment_id": "1",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "pending",
+    "base_price": 1000.0,
+    "current_high_bid": 0.0,
+    "current_high_bidder_id": null,
+    "reserve_price": null,
+    "created_at": "2025-05-10 14:19:43",
+    "updated_at": "2025-05-10 14:19:43",
+    "period": "1",
+    "team_id": "TOR",
+    "players": [
+      "TOR-5"
+    ],
+    "event_importance": "normal",
+    "executed_at": null,
+    "winner_notified": false
+  },
+  "e332b744-eb43-4365-a41d-9b4a95739d78": {
+    "id": "e332b744-eb43-4365-a41d-9b4a95739d78",
+    "moment_id": "4",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 5400.0,
+    "current_high_bidder_id": "1a031094-9e0f-4e4e-9667-b134f9a9fdbe",
+    "reserve_price": null,
+    "created_at": "2025-05-10 14:20:58",
+    "updated_at": "2025-05-10 14:20:58",
+    "period": "3",
+    "team_id": "both",
+    "players": [
+      "TOR-2"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-10 14:20:58",
+    "winner_notified": false
+  },
+  "fc9777f4-fb2e-42e1-b976-cf018522a8cd": {
+    "id": "fc9777f4-fb2e-42e1-b976-cf018522a8cd",
+    "moment_id": "4",
+    "game_id": 2,
+    "auction_type": "instant",
+    "status": "completed",
+    "base_price": 1000.0,
+    "current_high_bid": 5400.0,
+    "current_high_bidder_id": "1a031094-9e0f-4e4e-9667-b134f9a9fdbe",
+    "reserve_price": null,
+    "created_at": "2025-05-12 11:52:42",
+    "updated_at": "2025-05-12 11:52:42",
+    "period": "1",
+    "team_id": "both",
+    "players": [
+      "TOR-3"
+    ],
+    "event_importance": "normal",
+    "executed_at": "2025-05-12 11:52:42",
+    "winner_notified": false
+  }
+}

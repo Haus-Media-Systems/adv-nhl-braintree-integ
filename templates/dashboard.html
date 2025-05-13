@@ -13,20 +13,92 @@
                 <p>Your premium instant replay bidding platform for NHL games</p>
             </div>
             <div class="col-md-5">
-                <div class="card bg-light border-0 shadow-lg">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="fas fa-wallet fa-3x text-primary"></i>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="card bg-light border-0 shadow-lg">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-piggy-bank fa-3x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-muted mb-0">Total Budget</h6>
+                                        <h3 class="text-dark mb-0">${{ "{:,.2f}".format(user.total_budget) }}</h3>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <h6 class="text-muted mb-0">Available Budget</h6>
-                                <h2 class="text-primary mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white border-0">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <i class="fas fa-wallet fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Available</h6>
+                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.available_budget) }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-danger text-white border-0">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <i class="fas fa-receipt fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Spent</h6>
+                                        <h4 class="mb-0">${{ "{:,.2f}".format(user.spent_budget) }}</h4>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Pending Wins Alert -->
+                {% if user.pending_wins > 0 %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>{{ user.pending_wins }} Pending Win{{ 's' if user.pending_wins > 1 else '' }}</strong>
+                            <div class="small">Pay ${{ "{:,.2f}".format(user.pending_win_amount) }} to claim your winnings</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Breakdown Section -->
+<div class="container py-3 bg-light">
+    <div class="row text-center">
+        <div class="col-md-3">
+            <h6 class="text-muted">Total Budget</h6>
+            <h4>${{ "{:,.2f}".format(user.total_budget) }}</h4>
+        </div>
+        <div class="col-md-3">
+            <h6 class="text-muted">Allocated to Strategies</h6>
+            <h4 class="text-warning">${{ "{:,.2f}".format(user.allocated_budget) }}</h4>
+            <small class="text-muted">Reserved, not spent</small>
+        </div>
+        <div class="col-md-3">
+            <h6 class="text-muted">Actually Spent</h6>
+            <h4 class="text-danger">${{ "{:,.2f}".format(user.spent_budget) }}</h4>
+            <small class="text-muted">On paid wins</small>
+        </div>
+        <div class="col-md-3">
+            <h6 class="text-muted">Available</h6>
+            <h4 class="text-success">${{ "{:,.2f}".format(user.available_budget) }}</h4>
+            <small class="text-muted">For new strategies</small>
         </div>
     </div>
 </div>
@@ -70,7 +142,7 @@
                             <i class="fas fa-trophy"></i>
                         </div>
                         <h5>Bids Won</h5>
-                        <h3 class="text-info">0</h3>
+                        <h3 class="text-info">{{ user.wins_count if user.wins_count else 0 }}</h3>
                     </div>
                 </div>
             </div>
@@ -80,8 +152,8 @@
                         <div class="icon-circle bg-warning text-white mb-3">
                             <i class="fas fa-chart-line"></i>
                         </div>
-                        <h5>Audience Reach</h5>
-                        <h3 class="text-warning">0</h3>
+                        <h5>Win Rate</h5>
+                        <h3 class="text-warning">{{ "{:.1f}".format((user.wins_count / (user_strategies|length if user_strategies else 1)) * 100) if user.wins_count else 0 }}%</h3>
                     </div>
                 </div>
             </div>
@@ -100,10 +172,26 @@
         <div class="row">
             {% for game in upcoming_games %}
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm hover-card">
+                <div class="card h-100 shadow-sm hover-card
+                        {% if game.get('status') == 'live' %}game-card-live{% endif %}
+                        {% if game.get('status') == 'live' %}game-status-live{% elif game.get('status') == 'finished' %}game-status-finished{% else %}game-status-pending{% endif %}">
                     <div class="card-header bg-primary text-white">
-                        <span class="float-end badge bg-light text-dark">{{ game.date }}</span>
-                        <h5 class="mb-0">{{ game.time }}</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">{{ game.time }}</h5>
+                            </div>
+                            <div>
+                                {% if game.get('status') == 'live' %}
+                                    <span class="badge bg-success">
+                                        <span class="status-pulse"></span>LIVE
+                                    </span>
+                                {% elif game.get('status') == 'finished' %}
+                                    <span class="badge bg-light text-dark">FINISHED</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ game.date }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row align-items-center text-center mb-3">
@@ -127,9 +215,19 @@
                         </div>
 
                         <div class="d-grid mt-3">
-                            <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-primary">
-                                <i class="fas fa-eye me-1"></i> View Game Details
-                            </a>
+                            {% if game.get('status') == 'live' %}
+                                <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-success">
+                                    <i class="fas fa-circle me-1"></i> Watch Live Game
+                                </a>
+                            {% elif game.get('status') == 'finished' %}
+                                <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-history me-1"></i> View Game Results
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('game_detail', game_id=game.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-eye me-1"></i> View Game Details
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -244,12 +342,23 @@
                             <th>Moment</th>
                             <th>Bid Range</th>
                             <th>Focus</th>
+                            <th>Wins</th>
+                            <th>Spent</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for strategy_id, strategy in user_strategies.items() %}
+                            {% set strategy_wins = 0 %}
+                            {% set strategy_spent = 0 %}
+                            {% for result in user.auction_results if user.auction_results %}
+                                {% if result.get('winning_strategy_id') == strategy_id and result.payment_status == 'completed' %}
+                                    {% set strategy_wins = strategy_wins + 1 %}
+                                    {% set strategy_spent = strategy_spent + result.winning_amount %}
+                                {% endif %}
+                            {% endfor %}
+                            
                             <tr id="strategy-row-{{ strategy_id }}" class="strategy-row {% if strategy.get('status') == 'inactive' %}inactive{% else %}active{% endif %}">
                                 <td>
                                     {% if strategy.game_id %}
@@ -261,7 +370,16 @@
                                         {% endfor %}
                                         {% if game %}
                                             {{ game.away }} @ {{ game.home }}<br>
-                                            <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
+                                            <small class="text-muted">
+                                                {{ game.date }} | {{ game.time }}
+                                                {% if game.get('status') == 'live' %}
+                                                    <span class="badge bg-success ms-1">
+                                                        <span class="status-pulse"></span>LIVE
+                                                    </span>
+                                                {% elif game.get('status') == 'finished' %}
+                                                    <span class="badge bg-primary ms-1">FINISHED</span>
+                                                {% endif %}
+                                            </small>
                                         {% else %}
                                             Unknown Game
                                         {% endif %}
@@ -292,6 +410,16 @@
 
                                     {% if strategy.player_focus %}
                                         <br><small>{{ strategy.player_focus }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ strategy_wins }}</span>
+                                </td>
+                                <td>
+                                    {% if strategy_spent > 0 %}
+                                        <span class="text-danger">${{ "{:,.2f}".format(strategy_spent) }}</span>
+                                    {% else %}
+                                        <span class="text-muted">$0.00</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -401,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const strategyId = this.getAttribute('data-strategy-id');
             const currentAction = this.getAttribute('data-action');
             const row = document.getElementById(`strategy-row-${strategyId}`);
-            const statusBadge = row.querySelector('.badge');
+            const statusBadge = row.querySelector('.badge:last-child');
 
             // Determine new status based on current action
             const newStatus = currentAction === 'pause' ? 'inactive' : 'active';

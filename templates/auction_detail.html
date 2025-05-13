@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+
+{% block title %}Auction Details - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('auction_listings') }}">Auctions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Auction Details</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Auction Details</h1>
+            <p class="lead">
+                {% set moment = moments.get(auction.moment_id, {}) %}
+                {{ moment.get('name', 'Unknown Moment') }} -
+                {% set game = None %}
+                {% for g in upcoming_games %}
+                    {% if g.id == auction.game_id %}
+                        {% set game = g %}
+                    {% endif %}
+                {% endfor %}
+                {% if game %}
+                    {{ game.away }} @ {{ game.home }} ({{ game.date }})
+                {% else %}
+                    Game ID: {{ auction.game_id }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Updated Admin Controls section with game status check -->
+    {% if auction.auction_type == 'instant' and auction.status == 'pending' and user.is_admin %}
+    <div class="card mb-4">
+        <div class="card-header 
+            {% set game_status = '' %}
+            {% for g in upcoming_games %}
+                {% if g.id == auction.game_id %}
+                    {% set game_status = g.get('status', 'pending') %}
+                {% endif %}
+            {% endfor %}
+            {% if game_status == 'live' %}bg-warning{% else %}bg-danger{% endif %}
+        ">
+            <h5 class="mb-0">Admin Controls</h5>
+        </div>
+        <div class="card-body">
+            {% if game_status == 'live' %}
+                <p>This instant auction is ready to be executed.</p>
+                <a href="{{ url_for('execute_auction_route', auction_id=auction.id) }}"
+                   class="btn btn-danger"
+                   onclick="return confirm('Are you sure you want to execute this auction? This will immediately determine a winner based on active strategies.');">
+                    <i class="fas fa-bolt me-2"></i> Execute Instant Auction
+                </a>
+            {% else %}
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i> 
+                    Cannot execute auction: Game is {{ game_status }}. 
+                    <br>Auctions can only be executed when the game is in "Live" status.
+                </div>
+                {% if user.is_admin %}
+                    <a href="{{ url_for('admin_games') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-cogs me-2"></i> Manage Game Status
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Auction Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Auction Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <h5>Status</h5>
+                            <p>
+                                {% if auction.status == 'active' %}
+                                    <span class="badge bg-success">{{ auction.status|capitalize }}</span>
+                                {% elif auction.status == 'pending' %}
+                                    <span class="badge bg-warning">{{ auction.status|capitalize }}</span>
+                                {% elif auction.status == 'completed' %}
+                                    <span class="badge bg-primary">{{ auction.status|capitalize }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ auction.status|capitalize }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Base Price</h5>
+                            <p>${{ "{:,.2f}".format(auction.base_price) }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Current High Bid</h5>
+                            <p class="text-primary fw-bold">${{ "{:,.2f}".format(auction.current_high_bid) }}</p>
+                        </div>
+                    </div>
+
+{% if auction.auction_type == 'instant' %}
+<div class="card mb-4">
+    <div class="card-header bg-info">
+        <h5 class="mb-0">Instant Auction Details</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Period:</strong>
+            {% if auction.period == '1' %}1st Period
+            {% elif auction.period == '2' %}2nd Period
+            {% elif auction.period == '3' %}3rd Period
+            {% elif auction.period == 'OT' %}Overtime
+            {% elif auction.period == 'SO' %}Shootout
+            {% else %}{{ auction.period }}
+            {% endif %}
+        </p>
+
+        <p><strong>Team:</strong>
+            {% if auction.team_id == 'both' %}Both Teams
+            {% else %}
+                {% set team_name = auction.team_id %}
+                {% for g in upcoming_games %}
+                    {% if g.id == auction.game_id %}
+                        {% if auction.team_id == 'NYR' and g.home == 'New York Rangers' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'NYR' and g.away == 'New York Rangers' %}
+                            {% set team_name = g.away %}
+                        {% elif auction.team_id == 'BOS' and g.home == 'Boston Bruins' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'BOS' and g.away == 'Boston Bruins' %}
+                            {% set team_name = g.away %}
+                        {% elif auction.team_id == 'TOR' and g.home == 'Toronto Maple Leafs' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'TOR' and g.away == 'Toronto Maple Leafs' %}
+                            {% set team_name = g.away %}
+                        {% elif auction.team_id == 'MTL' and g.home == 'Montreal Canadiens' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'MTL' and g.away == 'Montreal Canadiens' %}
+                            {% set team_name = g.away %}
+                        {% elif auction.team_id == 'EDM' and g.home == 'Edmonton Oilers' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'EDM' and g.away == 'Edmonton Oilers' %}
+                            {% set team_name = g.away %}
+                        {% elif auction.team_id == 'CGY' and g.home == 'Calgary Flames' %}
+                            {% set team_name = g.home %}
+                        {% elif auction.team_id == 'CGY' and g.away == 'Calgary Flames' %}
+                            {% set team_name = g.away %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                {{ team_name }}
+            {% endif %}
+        </p>
+
+        <p><strong>Players:</strong>
+            {% if auction.player_names %}
+                {{ auction.player_names|join(', ') }}
+            {% elif auction.players %}
+                {{ auction.players|join(', ') }}
+            {% else %}
+                No specific players
+            {% endif %}
+        </p>
+
+        <p><strong>Event Importance:</strong>
+            <span class="badge {% if auction.event_importance == 'normal' %}bg-primary
+                              {% elif auction.event_importance == 'high' %}bg-warning
+                              {% elif auction.event_importance == 'critical' %}bg-danger
+                              {% endif %}">
+                {{ auction.event_importance|capitalize }}
+            </span>
+        </p>
+
+        {% if auction.executed_at %}
+        <p><strong>Executed At:</strong> {{ auction.executed_at }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Created At</h5>
+                            <p>{{ auction.created_at }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Last Updated</h5>
+                            <p>{{ auction.updated_at }}</p>
+                        </div>
+                    </div>
+
+                    {% if auction.reserve_price %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> This auction has a reserve price of ${{ "{:,.2f}".format(auction.reserve_price) }}.
+                    </div>
+                    {% endif %}
+
+                    {% if auction.status == 'active' and auction.auction_type != 'instant' %}
+                    <hr>
+                    <h4>Place a Bid</h4>
+                    <form action="{{ url_for('place_bid_route', auction_id=auction.id) }}" method="POST" class="mt-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-7">
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number"
+                                           class="form-control"
+                                           name="bid_amount"
+                                           id="bid_amount"
+                                           min="{{ auction.current_high_bid + auction.increment_amount }}"
+                                           step="100"
+                                           value="{{ auction.current_high_bid + auction.increment_amount }}"
+                                           required>
+                                </div>
+                                <div class="form-text">Minimum bid: ${{ "{:,.2f}".format(auction.current_high_bid + auction.increment_amount) }}</div>
+                            </div>
+                            <div class="col-md-5">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-gavel me-1"></i> Place Bid
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bidding Strategies for This Auction -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Your Bidding Strategies</h4>
+                </div>
+                <div class="card-body">
+                    {% set user_has_strategy = false %}
+                    {% for strategy_id, strategy in strategies.items() %}
+                        {% if strategy.user_id == user.id and strategy.moment_id == auction.moment_id and strategy.game_id == auction.game_id %}
+                            {% set user_has_strategy = true %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Your Strategy ID: {{ strategy_id }}</h5>
+                                    <p class="mb-1"><strong>Base Bid:</strong> ${{ "{:,.2f}".format(strategy.base_bid) }}</p>
+                                    <p class="mb-1"><strong>Max Bid:</strong> ${{ "{:,.2f}".format(strategy.max_bid) }}</p>
+                                    <p class="mb-1"><strong>Status:</strong>
+                                        <span class="badge {% if strategy.get('status') == 'inactive' %}bg-secondary{% else %}bg-success{% endif %}">
+                                            {% if strategy.get('status') == 'inactive' %}Inactive{% else %}Active{% endif %}
+                                        </span>
+                                    </p>
+                                    <div class="mt-3">
+                                        <a href="{{ url_for('setup_strategy', moment_id=strategy.moment_id, game_id=strategy.game_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i> Edit Strategy
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if not user_has_strategy %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-circle me-2"></i> You don't have a strategy for this auction.
+                            <div class="mt-2">
+                                <a href="{{ url_for('setup_strategy', moment_id=auction.moment_id, game_id=auction.game_id) }}" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle me-1"></i> Create Strategy
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bids for This Auction -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">Bid History</h4>
+                </div>
+                <div class="card-body">
+                    {% set auction_bids = [] %}
+                    {% for bid_id, bid in bids.items() %}
+                        {% if bid.auction_id == auction.id %}
+                            {% set _ = auction_bids.append(bid) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if auction_bids %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Bidder</th>
+                                        <th>Amount</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bid in auction_bids|sort(attribute='timestamp', reverse=True) %}
+                                        <tr class="{% if bid.status == 'winning' %}table-success{% endif %}">
+                                            <td>
+                                                {% set bidder = users.get(bid.user_id, {}) %}
+                                                {{ bidder.get('name', 'Unknown User') }}
+                                            </td>
+                                            <td>${{ "{:,.2f}".format(bid.amount) }}</td>
+                                            <td>{{ bid.timestamp }}</td>
+                                            <td>
+                                                <span class="badge {% if bid.status == 'winning' %}bg-success
+                                                                  {% elif bid.status == 'outbid' %}bg-warning
+                                                                  {% else %}bg-secondary{% endif %}">
+                                                    {{ bid.status|capitalize }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i> No bids have been placed for this auction yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Auction Result Section (for completed auctions) -->
+            {% if auction.status == 'completed' %}
+                {% set result = None %}
+                {% for result_id, res in auction_results.items() %}
+                    {% if res.auction_id == auction.id %}
+                        {% set result = res %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if result %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">Auction Result</h4>
+                        </div>
+                        <div class="card-body">
+                            <h5>Winner: {{ users.get(result.winning_user_id, {}).get('name', 'Unknown User') }}</h5>
+                            <h4 class="text-success">${{ "{:,.2f}".format(result.winning_amount) }}</h4>
+
+                            <hr>
+
+                            <p><strong>Payment Status:</strong>
+                                <span class="badge {% if result.payment_status == 'completed' %}bg-success
+                                                  {% elif result.payment_status == 'pending' %}bg-warning
+                                                  {% else %}bg-danger{% endif %}">
+                                    {{ result.payment_status|capitalize }}
+                                </span>
+                            </p>
+
+                            <p><strong>Ad Display Status:</strong>
+                                <span class="badge {% if result.ad_display_status == 'completed' %}bg-success
+                                                  {% elif result.ad_display_status == 'pending' %}bg-warning
+                                                  {% else %}bg-danger{% endif %}">
+                                    {{ result.ad_display_status|capitalize }}
+                                </span>
+                            </p>
+
+                            {% if result.payment_status == 'pending' and result.winning_user_id == user.id %}
+                                <div class="d-grid gap-2 mt-3">
+                                    <a href="{{ url_for('process_auction_payment_route', result_id=result.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-credit-card me-1"></i> Process Payment
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h4 class="mb-0">Auction Completed</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> This auction has been completed, but no winner was determined.
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Moment Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Moment Information</h4>
+                </div>
+                <div class="card-body">
+                    {% set moment = moments.get(auction.moment_id, {}) %}
+                    <h5>{{ moment.get('name', 'Unknown Moment') }}</h5>
+                    <p>{{ moment.get('description', 'No description available.') }}</p>
+
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h6>Exposure</h6>
+                            <span class="badge bg-primary">{{ moment.get('exposure', 'Unknown') }}</span>
+                        </div>
+                        <div class="col-4">
+                            <h6>Avg Bid</h6>
+                            <span class="badge bg-success">{{ moment.get('avg_bid', '$0') }}</span>
+                        </div>
+                        <div class="col-4">
+                            <h6>Frequency</h6>
+                            <span class="badge bg-info">{{ moment.get('frequency', 'Unknown') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Information with Status -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Game Information</h4>
+                </div>
+                <div class="card-body">
+                    {% set game = None %}
+                    {% for g in upcoming_games %}
+                        {% if g.id == auction.game_id %}
+                            {% set game = g %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if game %}
+                        <div class="text-center mb-3">
+                            <h5>{{ game.away }} @ {{ game.home }}</h5>
+                            <p class="text-muted">{{ game.date }} | {{ game.time }}</p>
+                            
+                            <!-- Game Status Badge -->
+                            <div class="mt-2 mb-3">
+                                {% set game_status = game.get('status', 'pending') %}
+                                {% if game_status == 'live' %}
+                                    <span class="badge bg-success fs-6">
+                                        <span class="status-pulse"></span>LIVE GAME
+                                    </span>
+                                {% elif game_status == 'finished' %}
+                                    <span class="badge bg-primary fs-6">FINISHED</span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">PENDING</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row text-center">
+                            <div class="col-5">
+                                <div class="team-logo mb-2">
+                                    <i class="fas fa-hockey-puck fa-2x text-primary"></i>
+                                </div>
+                                <p>{{ game.away }}</p>
+                            </div>
+                            <div class="col-2">
+                                <div class="my-2">VS</div>
+                            </div>
+                            <div class="col-5">
+                                <div class="team-logo mb-2">
+                                    <i class="fas fa-hockey-puck fa-2x text-danger"></i>
+                                </div>
+                                <p>{{ game.home }}</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i> Game information not available.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Admin Actions -->
+            {% if user.get('is_admin', False) and auction.status != 'completed' and auction.auction_type != 'instant' %}
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0">Admin Actions</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if auction.status == 'pending' %}
+                                <a href="{{ url_for('activate_auction', auction_id=auction.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-play-circle me-1"></i> Activate Auction
+                                </a>
+                            {% elif auction.status == 'active' %}
+                                <a href="{{ url_for('end_auction', auction_id=auction.id) }}" class="btn btn-warning"
+                                   onclick="return confirm('Are you sure you want to end this auction now?');">
+                                    <i class="fas fa-stop-circle me-1"></i> End Auction
+                                </a>
+                            {% endif %}
+                            <a href="{{ url_for('cancel_auction', auction_id=auction.id) }}" class="btn btn-danger"
+                               onclick="return confirm('Are you sure you want to cancel this auction? This action cannot be undone.');">
+                                <i class="fas fa-times-circle me-1"></i> Cancel Auction
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Helper functions for the template
+    function getTeamCode(teamName) {
+        const teamMapping = {
+            "New York Rangers": "NYR",
+            "Boston Bruins": "BOS",
+            "Toronto Maple Leafs": "TOR",
+            "Montreal Canadiens": "MTL",
+            "Edmonton Oilers": "EDM",
+            "Calgary Flames": "CGY"
+        };
+        return teamMapping[teamName] || "";
+    }
+</script>
+{% endblock %}

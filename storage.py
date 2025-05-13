@@ -11,6 +11,9 @@ TEAMS_FILE = os.path.join(DATA_DIR, 'teams.json')
 PLAYERS_FILE = os.path.join(DATA_DIR, 'players.json')
 GAMES_FILE = os.path.join(DATA_DIR, 'games.json')
 SPONSORS_FILE = os.path.join(DATA_DIR, 'sponsors.json')
+AUCTIONS_FILE = os.path.join(DATA_DIR, 'auctions.json')
+BIDS_FILE = os.path.join(DATA_DIR, 'bids.json')
+AUCTION_RESULTS_FILE = os.path.join(DATA_DIR, 'auction_results.json')
 
 # Ensure data directory exists
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -83,10 +86,37 @@ def save_games(games_data):
     return save_data(games_data, GAMES_FILE)
 
 def load_games(default_games=None):
-    """Load games data from file"""
+    """Load games data from file with enhanced debugging"""
     if default_games is None:
         default_games = []  # Games is a list, not a dict
-    return load_data(GAMES_FILE, default_games)
+    
+    print("\n=== LOADING GAMES FROM STORAGE ===")
+    print(f"Games file path: {GAMES_FILE}")
+    
+    if os.path.exists(GAMES_FILE):
+        try:
+            with open(GAMES_FILE, 'r') as f:
+                content = f.read()
+                print(f"File content length: {len(content)} bytes")
+                if content:
+                    result = json.loads(content)
+                    print(f"Successfully loaded {len(result)} games")
+                    
+                    for i, game in enumerate(result):
+                        print(f"Game {i+1}: {game.get('away')} @ {game.get('home')}")
+                        print(f"  ID: {game.get('id')} (type: {type(game.get('id')).__name__})")
+                        print(f"  Status: '{game.get('status')}' (type: {type(game.get('status')).__name__})")
+                    
+                    return result
+                else:
+                    print("File exists but is empty, returning default")
+                    return default_games
+        except Exception as e:
+            print(f"Error loading from file: {e}")
+            return default_games
+    else:
+        print("File does not exist, returning default")
+        return default_games
 
 def save_sponsors(sponsors_data):
     """Save sponsors data to file"""
@@ -97,3 +127,36 @@ def load_sponsors(default_sponsors=None):
     if default_sponsors is None:
         default_sponsors = []  # Sponsors is a list, not a dict
     return load_data(SPONSORS_FILE, default_sponsors)
+
+# Auction functions
+def save_auctions(auctions_data):
+    """Save auctions data to file"""
+    return save_data(auctions_data, AUCTIONS_FILE)
+
+def load_auctions(default_auctions=None):
+    """Load auctions data from file"""
+    if default_auctions is None:
+        default_auctions = {}
+    return load_data(AUCTIONS_FILE, default_auctions)
+
+# Bid functions
+def save_bids(bids_data):
+    """Save bids data to file"""
+    return save_data(bids_data, BIDS_FILE)
+
+def load_bids(default_bids=None):
+    """Load bids data from file"""
+    if default_bids is None:
+        default_bids = {}
+    return load_data(BIDS_FILE, default_bids)
+
+# Auction result functions
+def save_auction_results(auction_results_data):
+    """Save auction results data to file"""
+    return save_data(auction_results_data, AUCTION_RESULTS_FILE)
+
+def load_auction_results(default_auction_results=None):
+    """Load auction results data from file"""
+    if default_auction_results is None:
+        default_auction_results = {}
+    return load_data(AUCTION_RESULTS_FILE, default_auction_results)

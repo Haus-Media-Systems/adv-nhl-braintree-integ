@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Instant Auction - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('auction_listings') }}">Auctions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create Instant Auction</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Create Instant Auction</h1>
+            <p class="lead">Set up an instant auction for a specific moment in a game</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> In production, most auctions will be triggered automatically by the AI system monitoring games. This form allows manual trigger for testing and as a fallback mechanism.
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Event Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_auction_submit') }}">
+                        <div class="mb-4">
+                            <h5>Select Game</h5>
+                            <select class="form-select" name="game_id" id="game_id" required>
+                                <option value="" selected disabled>Choose a game...</option>
+                                {% for game in upcoming_games %}
+                                <option value="{{ game['id'] }}">
+                                    {{ game['date'] }} - {{ game['time'] }}: {{ game['away'] }} @ {{ game['home'] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">The game in which this moment is occurring</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>Select Moment Type</h5>
+                            <select class="form-select" name="moment_id" id="moment_id" required>
+                                <option value="" selected disabled>Choose a moment type...</option>
+                                {% for moment_id, moment in moments.items() %}
+                                <option value="{{ moment_id }}">{{ moment['name'] }} - {{ moment['description'] }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">The type of moment that triggers the ad display</div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <div class="mb-4">
+                            <h5>Specific Event Details</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="period" class="form-label">Game Period</label>
+                                    <select class="form-select" id="period" name="period" required>
+                                        <option value="1" selected>1st Period</option>
+                                        <option value="2">2nd Period</option>
+                                        <option value="3">3rd Period</option>
+                                        <option value="OT">Overtime</option>
+                                        <option value="SO">Shootout</option>
+                                    </select>
+                                    <div class="form-text">When the event occurred in the game</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="event_importance" class="form-label">Event Importance</label>
+                                    <select class="form-select" id="event_importance" name="event_importance" required>
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="high">High (e.g. game-tying goal)</option>
+                                        <option value="critical">Critical (e.g. game-winning goal)</option>
+                                    </select>
+                                    <div class="form-text">How significant is this event in the context of the game</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="team_id" class="form-label">Team</label>
+                                    <select class="form-select" id="team_id" name="team_id" required>
+                                        <option value="" selected disabled>Select team...</option>
+                                        <!-- Will be populated dynamically based on selected game -->
+                                    </select>
+                                    <div class="form-text">Which team(s) were involved in the event</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="players" class="form-label">Players Involved</label>
+                                    <select class="form-select" id="players" name="players[]" multiple required>
+                                        <!-- Will be populated dynamically based on selected team(s) -->
+                                        <option disabled>Select game and team first</option>
+                                    </select>
+                                    <div class="form-text">Select multiple players with Ctrl+Click or Cmd+Click (Mac)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <h5>Auction Parameters</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="base_price" class="form-label">Base Price ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="base_price" name="base_price" min="500" step="100" value="1000" required>
+                                    </div>
+                                    <div class="form-text">Minimum bid amount</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="reserve_price" class="form-label">Reserve Price ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="reserve_price" name="reserve_price" min="0" step="100" placeholder="Optional">
+                                    </div>
+                                    <div class="form-text">Minimum acceptable winning bid (optional)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="execute_immediately" name="execute_immediately" checked>
+                                <label class="form-check-label" for="execute_immediately">
+                                    <strong>Execute Auction Immediately</strong>
+                                </label>
+                                <div class="form-text">If checked, the auction will be processed instantly when submitted</div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-bolt me-2"></i> Trigger Instant Auction
+                            </button>
+                            <a href="{{ url_for('auction_listings') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Instant Auction Process</h4>
+                </div>
+                <div class="card-body">
+                    <h5>How It Works</h5>
+                    <ol class="mb-4">
+                        <li><strong>Event Detection:</strong> Game moment is detected (or manually triggered)</li>
+                        <li><strong>Strategy Matching:</strong> System finds all applicable bidding strategies</li>
+                        <li><strong>Bid Evaluation:</strong> All matching strategies are evaluated instantly</li>
+                        <li><strong>Winner Determination:</strong> Highest valid bid automatically wins</li>
+                        <li><strong>Ad Display:</strong> Winner's ad is immediately shown in the broadcast</li>
+                    </ol>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-bolt me-2"></i> <strong>Instant Auction:</strong> Results are determined in milliseconds with no manual intervention.
+                    </div>
+                    
+                    <h5 class="mt-4">Event Importance</h5>
+                    <p>Event importance affects visibility and audience engagement:</p>
+                    <ul>
+                        <li><strong>Normal:</strong> Standard moment</li>
+                        <li><strong>High:</strong> Significant moment</li>
+                        <li><strong>Critical:</strong> Game-changing moment</li>
+                    </ul>
+                    
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle me-2"></i> In production, most auctions will be triggered automatically by the AI system monitoring games.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Active Bidding Strategies</h4>
+                </div>
+                <div class="card-body">
+                    <p>When an auction is triggered, these strategies will automatically participate:</p>
+                    <div id="activeStrategies">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12"></span>
+                            <span class="placeholder col-10"></span>
+                            <span class="placeholder col-8"></span>
+                        </div>
+                        <p class="text-center text-muted">Select a game and moment to see applicable strategies</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('my_strategies') }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-list-check me-1"></i> Manage All Strategies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- Add Select2 JS (include jQuery first) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Select2 for player selection
+        $(document).ready(function() {
+            $('#players').select2({
+                placeholder: "Select players involved",
+                allowClear: true,
+                width: '100%'
+            });
+        });
+        
+        // Sample player data (would be replaced with API calls in production)
+        const teamPlayers = {
+            "NYR": [
+                { id: "NYR-1", name: "Igor Shesterkin", position: "G" },
+                { id: "NYR-2", name: "Artemi Panarin", position: "LW" },
+                { id: "NYR-3", name: "Mika Zibanejad", position: "C" },
+                { id: "NYR-4", name: "Adam Fox", position: "D" },
+                { id: "NYR-5", name: "Chris Kreider", position: "LW" }
+            ],
+            "BOS": [
+                { id: "BOS-1", name: "Jeremy Swayman", position: "G" },
+                { id: "BOS-2", name: "David Pastrnak", position: "RW" },
+                { id: "BOS-3", name: "Brad Marchand", position: "LW" },
+                { id: "BOS-4", name: "Charlie McAvoy", position: "D" },
+                { id: "BOS-5", name: "Hampus Lindholm", position: "D" }
+            ],
+            "TOR": [
+                { id: "TOR-1", name: "Auston Matthews", position: "C" },
+                { id: "TOR-2", name: "Mitch Marner", position: "RW" },
+                { id: "TOR-3", name: "William Nylander", position: "RW" },
+                { id: "TOR-4", name: "John Tavares", position: "C" },
+                { id: "TOR-5", name: "Joseph Woll", position: "G" }
+            ],
+            "MTL": [
+                { id: "MTL-1", name: "Cole Caufield", position: "RW" },
+                { id: "MTL-2", name: "Nick Suzuki", position: "C" },
+                { id: "MTL-3", name: "Mike Matheson", position: "D" },
+                { id: "MTL-4", name: "Sam Montembeault", position: "G" },
+                { id: "MTL-5", name: "Kirby Dach", position: "C" }
+            ],
+            "EDM": [
+                { id: "EDM-1", name: "Connor McDavid", position: "C" },
+                { id: "EDM-2", name: "Leon Draisaitl", position: "C" },
+                { id: "EDM-3", name: "Zach Hyman", position: "LW" },
+                { id: "EDM-4", name: "Evan Bouchard", position: "D" },
+                { id: "EDM-5", name: "Stuart Skinner", position: "G" }
+            ],
+            "CGY": [
+                { id: "CGY-1", name: "Jacob Markstrom", position: "G" },
+                { id: "CGY-2", name: "Nazem Kadri", position: "C" },
+                { id: "CGY-3", name: "Elias Lindholm", position: "C" },
+                { id: "CGY-4", name: "Rasmus Andersson", position: "D" },
+                { id: "CGY-5", name: "Blake Coleman", position: "C" }
+            ]
+        };
+
+        // Game data mapping
+        const gameTeams = {
+            {% for game in upcoming_games %}
+                "{{ game.id }}": {
+                    "home": "{{ game.home }}",
+                    "away": "{{ game.away }}",
+                    "homeCode": getTeamCode("{{ game.home }}"),
+                    "awayCode": getTeamCode("{{ game.away }}")
+                }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        // Helper function to get team code from name
+        function getTeamCode(teamName) {
+            const teamMapping = {
+                "New York Rangers": "NYR",
+                "Boston Bruins": "BOS",
+                "Toronto Maple Leafs": "TOR",
+                "Montreal Canadiens": "MTL",
+                "Edmonton Oilers": "EDM",
+                "Calgary Flames": "CGY"
+            };
+            return teamMapping[teamName] || "";
+        }
+
+        // Update teams dropdown when game changes
+        const gameSelect = document.getElementById('game_id');
+        const teamSelect = document.getElementById('team_id');
+        const playersSelect = document.getElementById('players');
+        const momentSelect = document.getElementById('moment_id');
+        const activeStrategiesDiv = document.getElementById('activeStrategies');
+        
+        if (gameSelect && teamSelect) {
+            gameSelect.addEventListener('change', function() {
+                const gameId = this.value;
+                teamSelect.innerHTML = '<option value="" selected disabled>Select team...</option>';
+                
+                // Clear and reset players dropdown
+                $('#players').empty().trigger('change');
+                
+                if (gameId && gameTeams[gameId]) {
+                    const game = gameTeams[gameId];
+                    
+                    // Add "Both Teams" option
+                    const bothOption = document.createElement('option');
+                    bothOption.value = "both";
+                    bothOption.textContent = "Both Teams";
+                    teamSelect.appendChild(bothOption);
+                    
+                    // Add home team
+                    const homeOption = document.createElement('option');
+                    homeOption.value = game.homeCode;
+                    homeOption.textContent = game.home + " (Home)";
+                    homeOption.setAttribute('data-team-name', game.home);
+                    teamSelect.appendChild(homeOption);
+                    
+                    // Add away team
+                    const awayOption = document.createElement('option');
+                    awayOption.value = game.awayCode;
+                    awayOption.textContent = game.away + " (Away)";
+                    awayOption.setAttribute('data-team-name', game.away);
+                    teamSelect.appendChild(awayOption);
+                    
+                    // Load all players from both teams
+                    updatePlayersList(game.homeCode, game.awayCode);
+                    
+                    updateActiveStrategies();
+                }
+            });
+        }
+        
+        // Update players list based on selected teams
+        function updatePlayersList(homeTeamCode, awayTeamCode) {
+            // Clear previous options
+            $('#players').empty();
+            
+            // Add home team players
+            if (homeTeamCode && teamPlayers[homeTeamCode]) {
+                const homeOptgroup = new Option(gameTeams[gameSelect.value].home + " Players", "");
+                homeOptgroup.disabled = true;
+                $('#players').append(homeOptgroup);
+                
+                teamPlayers[homeTeamCode].forEach(player => {
+                    const newOption = new Option(player.name + " (" + player.position + ")", player.id);
+                    $('#players').append(newOption);
+                });
+            }
+            
+            // Add away team players
+            if (awayTeamCode && teamPlayers[awayTeamCode]) {
+                const awayOptgroup = new Option(gameTeams[gameSelect.value].away + " Players", "");
+                awayOptgroup.disabled = true;
+                $('#players').append(awayOptgroup);
+                
+                teamPlayers[awayTeamCode].forEach(player => {
+                    const newOption = new Option(player.name + " (" + player.position + ")", player.id);
+                    $('#players').append(newOption);
+                });
+            }
+            
+            // Refresh Select2
+            $('#players').trigger('change');
+        }
+        
+        // Update player options when team changes
+        if (teamSelect && playersSelect) {
+            teamSelect.addEventListener('change', function() {
+                const teamValue = this.value;
+                const gameId = gameSelect.value;
+                
+                if (gameId && gameTeams[gameId]) {
+                    const game = gameTeams[gameId];
+                    
+                    if (teamValue === "both") {
+                        // Show all players from both teams
+                        updatePlayersList(game.homeCode, game.awayCode);
+                    } else if (teamValue === game.homeCode) {
+                        // Show only home team players
+                        updatePlayersList(game.homeCode, null);
+                    } else if (teamValue === game.awayCode) {
+                        // Show only away team players
+                        updatePlayersList(null, game.awayCode);
+                    }
+                }
+                
+                updateActiveStrategies();
+            });
+        }
+        
+        // Update active strategies when moment changes
+        if (momentSelect) {
+            momentSelect.addEventListener('change', function() {
+                updateActiveStrategies();
+            });
+        }
+        
+        // Function to update active strategies section
+        function updateActiveStrategies() {
+            const gameId = gameSelect.value;
+            const momentId = momentSelect.value;
+            
+            if (!gameId || !momentId) {
+                activeStrategiesDiv.innerHTML = `
+                    <div class="placeholder-glow">
+                        <span class="placeholder col-12"></span>
+                        <span class="placeholder col-10"></span>
+                        <span class="placeholder col-8"></span>
+                    </div>
+                    <p class="text-center text-muted">Select a game and moment to see applicable strategies</p>
+                `;
+                return;
+            }
+            
+            // In production, this would fetch actual strategies from the server
+            // For now, we'll simulate with placeholder data
+            
+            // Simulate API call delay
+            activeStrategiesDiv.innerHTML = `
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                // Sample data - would come from API in production
+                const sampleStrategies = [
+                    { id: 1, user: "SportsDrink Co.", min: 3000, max: 5000 },
+                    { id: 2, user: "Car Manufacturer", min: 4500, max: 7000 },
+                    { id: 3, user: "Insurance Company", min: 2500, max: 6000 }
+                ];
+                
+                if (sampleStrategies.length > 0) {
+                    let html = '<ul class="list-group">';
+                    sampleStrategies.forEach(strat => {
+                        html += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${strat.user}</strong>
+                                    <span class="ms-2 badge bg-info">$${strat.min.toLocaleString()} - $${strat.max.toLocaleString()}</span>
+                                </div>
+                                <span class="badge bg-success rounded-pill">Active</span>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    activeStrategiesDiv.innerHTML = html;
+                } else {
+                    activeStrategiesDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i> No active strategies found for this moment in this game.
+                        </div>
+                    `;
+                }
+            }, 500);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Game Status Management - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('auction_listings') }}">Auctions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Game Management</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Game Status Management</h1>
+            <p class="lead">Control which games are live, pending, or finished</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> Auctions can only be executed when games are in "Live" status.
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading game data...</p>
+    </div>
+
+    <!-- Game sections will be inserted here by JavaScript -->
+    <div id="liveGamesSection" style="display: none;"></div>
+    <div id="pendingGamesSection" style="display: none;"></div>
+    <div id="finishedGamesSection" style="display: none;"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch game data from the API
+    fetch('/admin/games/data')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Game data loaded:', data);
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+
+            // Render each section
+            renderGamesSection('live', data.live_games);
+            renderGamesSection('pending', data.pending_games);
+            renderGamesSection('finished', data.finished_games);
+
+            // Set up event listeners for the buttons
+            setupButtonEventListeners();
+        })
+        .catch(error => {
+            console.error('Error fetching game data:', error);
+            document.getElementById('loading').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading game data. Please refresh the page.
+                </div>
+            `;
+        });
+
+    // Function to render a game section
+    function renderGamesSection(type, games) {
+        let sectionId, title, headerClass, badgeClass, iconClass, emptyMessage, buttonLabel, buttonClass, buttonIcon, buttonAction;
+
+        // Set properties based on section type
+        if (type === 'live') {
+            sectionId = 'liveGamesSection';
+            title = 'Live Games';
+            headerClass = 'bg-success';
+            badgeClass = 'bg-success';
+            iconClass = 'fa-circle';
+            emptyMessage = 'No games are currently live';
+            buttonLabel = 'Finish Game';
+            buttonClass = 'btn-warning';
+            buttonIcon = 'fa-stop-circle';
+            buttonAction = 'finished';
+        } else if (type === 'pending') {
+            sectionId = 'pendingGamesSection';
+            title = 'Pending Games';
+            headerClass = 'bg-secondary';
+            badgeClass = 'bg-secondary';
+            iconClass = 'fa-clock';
+            emptyMessage = 'No pending games';
+            buttonLabel = 'Start Game';
+            buttonClass = 'btn-success';
+            buttonIcon = 'fa-play-circle';
+            buttonAction = 'live';
+        } else { // finished
+            sectionId = 'finishedGamesSection';
+            title = 'Finished Games';
+            headerClass = 'bg-primary';
+            badgeClass = 'bg-primary';
+            iconClass = 'fa-check-circle';
+            emptyMessage = 'No finished games';
+            buttonLabel = 'Reset Game';  // Changed from "Restart Game" to "Reset Game"
+            buttonClass = 'btn-warning';
+            buttonIcon = 'fa-redo';
+            buttonAction = 'pending';  // Changed from "live" to "pending"
+        }
+
+        // Get the container element
+        const container = document.getElementById(sectionId);
+
+        // Build HTML for the section
+        let html = `
+            <div class="card mb-4">
+                <div class="card-header ${headerClass} text-white">
+                    <h4 class="mb-0"><i class="fas ${iconClass} me-2"></i> ${title} (${games.length})</h4>
+                </div>
+                <div class="card-body">
+        `;
+
+        if (games.length > 0) {
+            html += `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            games.forEach(game => {
+                html += `
+                    <tr>
+                        <td><strong>${game.away} @ ${game.home}</strong></td>
+                        <td>${game.date}</td>
+                        <td>${game.time}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">
+                                <i class="fas ${iconClass} me-1"></i> ${type.charAt(0).toUpperCase() + type.slice(1)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm ${buttonClass} status-btn"
+                                        data-game-id="${game.id}"
+                                        data-new-status="${buttonAction}">
+                                    <i class="fas ${buttonIcon} me-1"></i> ${buttonLabel}
+                                </button>
+                                <a href="/game/${game.id}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i> View Game
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas ${iconClass} fa-3x mb-3"></i>
+                    <p>${emptyMessage}</p>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+
+        // Insert the HTML and show the section
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
+    // Function to set up event listeners for the status buttons
+    function setupButtonEventListeners() {
+        document.querySelectorAll('.status-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const gameId = this.dataset.gameId;
+                const newStatus = this.dataset.newStatus;
+                
+                // Customize confirmation message based on action
+                let confirmMessage = '';
+                if (newStatus === 'pending' && this.closest('#finishedGamesSection')) {
+                    confirmMessage = 'This will reset the game to pending status. The game will appear as upcoming again, but auction results will be preserved. Continue?';
+                } else if (newStatus === 'live') {
+                    confirmMessage = 'This will start the game. Are you sure?';
+                } else if (newStatus === 'finished') {
+                    confirmMessage = 'This will finish the game. Are you sure?';
+                }
+
+                // Show confirmation dialog if applicable
+                if (confirmMessage && !confirm(confirmMessage)) {
+                    return;
+                }
+
+                // Make API call to update status
+                fetch(`/admin/game/${gameId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: newStatus
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to show updated status
+                        window.location.reload();
+                    } else {
+                        alert('Failed to update game status: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the game status.');
+                });
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

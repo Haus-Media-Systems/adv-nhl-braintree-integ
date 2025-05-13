@@ -42,6 +42,17 @@ users = storage.load_users({
     }
 })
 
+# Add a dedicated administrator account
+users["admin"] = {
+    "id": "admin",
+    "name": "Administrator",
+    "company": "NHL Bidding Platform",
+    "email": "admin@gmail.com",
+    "password": "admin",
+    "budget": 0,  # Admin doesn't need a budget
+    "is_admin": True  # This grants admin privileges
+}
+
 # Mock team and player data - Load from storage or use defaults
 teams = storage.load_data(storage.TEAMS_FILE, {
     "NYR": {
@@ -122,6 +133,11 @@ players = storage.load_data(storage.PLAYERS_FILE, {
 })
 
 strategies = storage.load_strategies({})
+
+# Initialize auction-related data structures
+auction_data = storage.load_auctions({})
+bids = storage.load_bids({})
+auction_results = storage.load_auction_results({})
 
 moments = storage.load_data(storage.MOMENTS_FILE, {
     1: {
@@ -219,14 +235,29 @@ sponsors = storage.load_data(storage.SPONSORS_FILE, [
     }
 ])
 
-# Budget calculation helper functions
-def calculate_used_budget(user_id):
-    """Calculate the total amount of budget used in all active strategies"""
-    total_used = 0
+# Budget calculation helper functions - UPDATED
+
+def calculate_allocated_budget(user_id):
+    """Calculate the total amount of budget allocated in all active strategies"""
+    # This represents the money "reserved" for potential bids, not actual spending
+    total_allocated = 0
     for strategy in strategies.values():
-        if strategy['user_id'] == user_id:
-            total_used += float(strategy.get('max_bid', 0))
-    return total_used
+        if strategy['user_id'] == user_id and strategy.get('status', 'active') == 'active':
+            total_allocated += float(strategy.get('max_bid', 0))
+    return total_allocated
+
+def calculate_spent_budget(user_id):
+    """Calculate the actual money spent on winning auctions"""
+    # This represents the actual money spent on completed/paid auction wins
+    total_spent = 0
+
+    for result_id, result in auction_results.items():
+        if result['winning_user_id'] == user_id:
+            # Only count completed payments as spent
+            if result.get('payment_status') == 'completed':
+                total_spent += float(result.get('winning_amount', 0))
+
+    return total_spent
 
 def calculate_available_budget(user_id):
     """Calculate the available budget for a user"""
@@ -237,60 +268,74 @@ def calculate_available_budget(user_id):
     # Get the total budget from the user object
     total_budget = float(user.get('budget', 0))
 
-    # Calculate used budget
-    used_budget = calculate_used_budget(user_id)
+    # Subtract actual spent money (not allocated)
+    spent_budget = calculate_spent_budget(user_id)
 
     # Return the difference
-    return max(0, total_budget - used_budget)
+    return max(0, total_budget - spent_budget)
 
-def debug_print_budget(user_id):
-    """Print budget information for debugging"""
+def get_user_budget_info(user_id):
+    """Get comprehensive budget information for a user"""
     user = users.get(user_id)
     if not user:
-        print("User not found")
-        return
+        return {
+            'total_budget': 0,
+            'allocated_budget': 0,
+            'spent_budget': 0,
+            'used_budget': 0,  # Add this for backward compatibility
+            'available_budget': 0,
+            'pending_wins': 0,
+            'pending_win_amount': 0
+        }
 
     total_budget = float(user.get('budget', 0))
+    allocated_budget = calculate_allocated_budget(user_id)
+    spent_budget = calculate_spent_budget(user_id)
+    available_budget = calculate_available_budget(user_id)
 
-    print("\n=== BUDGET INFORMATION ===")
-    print(f"User: {user.get('name')} (ID: {user_id})")
-    print(f"Total Budget: ${total_budget:,.2f}")
+    # Calculate pending wins (won but not yet paid)
+    pending_wins = 0
+    pending_win_amount = 0
+    for result_id, result in auction_results.items():
+        if result['winning_user_id'] == user_id and result.get('payment_status') == 'pending':
+            pending_wins += 1
+            pending_win_amount += float(result.get('winning_amount', 0))
 
-    # Calculate used budget
-    used_budget = 0
-    print("\nActive strategies:")
-    for strat_id, strategy in strategies.items():
-        if strategy['user_id'] == user_id:
-            max_bid = float(strategy.get('max_bid', 0))
-            used_budget += max_bid
-            moment_id = strategy.get('moment_id')
-            moment_name = "Unknown"
-            if moment_id in moments:
-                moment_name = moments[moment_id]['name']
-            print(f"  Strategy {strat_id}: {moment_name} - ${max_bid:,.2f}")
-
-    print(f"\nTotal Used Budget: ${used_budget:,.2f}")
-    print(f"Available Budget: ${max(0, total_budget - used_budget):,.2f}")
-    print("=========================\n")
+    return {
+        'total_budget': total_budget,
+        'allocated_budget': allocated_budget,
+        'spent_budget': spent_budget,
+        'used_budget': spent_budget,  # Set used_budget to be the same as spent_budget for compatibility
+        'available_budget': available_budget,
+        'pending_wins': pending_wins,
+        'pending_win_amount': pending_win_amount
+    }
 
 # Helper functions
 def get_user():
     if 'user_id' in session:
         user_id = session['user_id']
-        print(f"Getting user with ID: {user_id}")
-        print(f"Available users: {list(users.keys())}")
         user = users.get(user_id)
         if user:
-            # Add budget information for templates
-            user['total_budget'] = float(user.get('budget', 0))
-            user['used_budget'] = calculate_used_budget(user_id)
-            user['available_budget'] = calculate_available_budget(user_id)
+            # Add comprehensive budget information
+            budget_info = get_user_budget_info(user_id)
+            user.update(budget_info)
+
+            # Add admin flag for easier template checks
+            user['is_admin'] = user.get('is_admin', False)
+
             return user
-        else:
-            print(f"User ID {user_id} not found in users dictionary")
-    else:
-        print("No user_id in session")
     return None
+
+# Helper function to get game status badge class
+def get_game_status_badge_class(status):
+    """Return the appropriate Bootstrap badge class for game status"""
+    status_classes = {
+        'pending': 'bg-secondary',
+        'live': 'bg-success',
+        'finished': 'bg-primary'
+    }
+    return status_classes.get(status, 'bg-secondary')
 
 # Debug helper to print strategies in a readable format
 def debug_print_strategies():
@@ -311,6 +356,651 @@ def debug_print_strategies():
             print(f"  Max Bid: ${strategy.get('max_bid', 0):.2f}")
             print("  ---------")
     print("========================\n")
+
+# Helper functions for auction management
+def create_auction(moment_id, game_id, start_time, end_time, base_price=1000.00, reserve_price=None, increment_amount=500.00):
+    """Create a new auction for a moment in a specific game"""
+    # Generate a unique ID for the auction
+    auction_id = str(uuid.uuid4())
+    
+    # Get current timestamp
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Create auction object
+    auction = {
+        "id": auction_id,
+        "moment_id": moment_id,
+        "game_id": game_id,
+        "status": "pending",
+        "start_time": start_time,
+        "end_time": end_time,
+        "base_price": float(base_price),
+        "current_high_bid": 0.00,
+        "current_high_bidder_id": None,
+        "reserve_price": float(reserve_price) if reserve_price else None,
+        "increment_amount": float(increment_amount),
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    # Store the auction
+    auction_data[auction_id] = auction
+    storage.save_auction_data(auction_data)
+    
+    return auction_id
+
+def create_instant_auction(moment_id, game_id, base_price=1000.00, reserve_price=None, 
+                          period="1", team_id="both", players=None, event_importance="normal"):
+    """Create a new instant auction for a moment in a specific game"""
+    # Generate a unique ID for the auction
+    auction_id = str(uuid.uuid4())
+
+    # Get current timestamp
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Handle list of players (ensure it's a list)
+    if players is None:
+        players = []
+    
+    # Create auction object without trying to resolve player names
+    auction = {
+        "id": auction_id,
+        "moment_id": moment_id,
+        "game_id": game_id,
+        "auction_type": "instant",  # New field to distinguish instant auctions
+        "status": "pending",
+        "base_price": float(base_price),
+        "current_high_bid": 0.00,
+        "current_high_bidder_id": None,
+        "reserve_price": float(reserve_price) if reserve_price else None,
+        "created_at": now,
+        "updated_at": now,
+        # New instant auction specific fields
+        "period": period,
+        "team_id": team_id,
+        "players": players,  # Just store the IDs
+        "event_importance": event_importance,
+        "executed_at": None,
+        "winner_notified": False
+    }
+
+    # Store the auction
+    auction_data[auction_id] = auction
+    storage.save_auctions(auction_data)
+
+    return auction_id
+
+def execute_instant_auction(auction_id):
+    """Execute an instant auction with proper competitive bidding logic"""
+    if auction_id not in auction_data:
+        return {"success": False, "message": "Auction not found"}
+
+    auction = auction_data[auction_id]
+
+    # Check if the game is live
+    game_id = auction.get('game_id')
+    game = next((g for g in upcoming_games if g['id'] == game_id), None)
+    
+    if not game:
+        return {"success": False, "message": "Game not found"}
+    
+    if game.get('status') != 'live':
+        return {"success": False, "message": f"Cannot execute auction: Game is {game.get('status', 'pending')}. Game must be live to execute auctions."}
+    
+    # Only pending auctions can be executed
+    if auction["status"] != "pending":
+        return {"success": False, "message": f"Cannot execute auction with status: {auction['status']}"}
+
+    # Find all applicable strategies
+    applicable_strategies = find_applicable_strategies(auction)
+
+    if not applicable_strategies:
+        # Finalize auction with no bidders
+        return finalize_instant_auction(auction_id, None, 0)
+
+    # Update auction status to active
+    auction["status"] = "active"
+    auction["updated_at"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    auction_data[auction_id] = auction
+    storage.save_auctions(auction_data)
+
+    # Create a bid registry for tracking all bids
+    bid_registry = []
+    
+    # Initialize bidders with their base bids
+    active_bidders = {}
+    for strategy_id, strategy in applicable_strategies.items():
+        user_id = strategy.get('user_id')
+        base_bid = float(strategy.get('base_bid', 0))
+        max_bid = float(strategy.get('max_bid', 0))
+        increment = float(strategy.get('bid_increment', 500))  # Default to 500 if not set
+        
+        active_bidders[strategy_id] = {
+            'user_id': user_id,
+            'current_bid': base_bid,
+            'max_bid': max_bid,
+            'increment': increment,
+            'is_active': True
+        }
+        
+        # Create initial bid record
+        bid_id = str(uuid.uuid4())
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        bid = {
+            "id": bid_id,
+            "auction_id": auction_id,
+            "user_id": user_id,
+            "strategy_id": strategy_id,
+            "amount": base_bid,
+            "status": "active",
+            "timestamp": now,
+            "is_automated": True,
+            "max_bid": max_bid
+        }
+        
+        bid_registry.append(bid)
+        bids[bid_id] = bid
+    
+    # Competitive bidding loop
+    bidding_round = 0
+    while len([b for b in active_bidders.values() if b['is_active']]) > 1:
+        bidding_round += 1
+        
+        # Find current high bid
+        current_high_bid = 0
+        high_bidder_strategy = None
+        for strategy_id, bidder in active_bidders.items():
+            if bidder['is_active'] and bidder['current_bid'] > current_high_bid:
+                current_high_bid = bidder['current_bid']
+                high_bidder_strategy = strategy_id
+        
+        # Raise bids for non-high bidders
+        for strategy_id, bidder in active_bidders.items():
+            if bidder['is_active'] and strategy_id != high_bidder_strategy:
+                # Calculate next bid
+                next_bid = current_high_bid + bidder['increment']
+                
+                if next_bid <= bidder['max_bid']:
+                    # Update current bid
+                    bidder['current_bid'] = next_bid
+                    
+                    # Create bid record
+                    bid_id = str(uuid.uuid4())
+                    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    bid = {
+                        "id": bid_id,
+                        "auction_id": auction_id,
+                        "user_id": bidder['user_id'],
+                        "strategy_id": strategy_id,
+                        "amount": next_bid,
+                        "status": "active",
+                        "timestamp": now,
+                        "is_automated": True,
+                        "max_bid": bidder['max_bid']
+                    }
+                    
+                    bid_registry.append(bid)
+                    bids[bid_id] = bid
+                else:
+                    # Bidder has reached their max
+                    bidder['is_active'] = False
+                    
+                    # Mark last bid as outbid
+                    for bid_id, bid in bids.items():
+                        if (bid["auction_id"] == auction_id and 
+                            bid["strategy_id"] == strategy_id and 
+                            bid["status"] == "active"):
+                            bid["status"] = "outbid"
+                            bids[bid_id] = bid
+        
+        # Prevent infinite loop (safety check)
+        if bidding_round > 1000:
+            break
+    
+    # Determine winner (last active bidder)
+    winner_strategy_id = None
+    winner_bid_amount = 0
+    tied_bidders = []
+    
+    for strategy_id, bidder in active_bidders.items():
+        if bidder['is_active']:
+            if not winner_strategy_id or bidder['current_bid'] > winner_bid_amount:
+                winner_strategy_id = strategy_id
+                winner_bid_amount = bidder['current_bid']
+                tied_bidders = [strategy_id]
+            elif bidder['current_bid'] == winner_bid_amount:
+                tied_bidders.append(strategy_id)
+    
+    # Handle ties by registration order (earliest registered user wins)
+    if len(tied_bidders) > 1:
+        # Find earliest registered user among tied bidders
+        earliest_user_id = None
+        earliest_registration = None
+        
+        for strategy_id in tied_bidders:
+            user_id = applicable_strategies[strategy_id]['user_id']
+            user = users.get(user_id)
+            
+            if user:
+                # We don't have a registration date field, so we'll use user ID as a proxy
+                # Lower user IDs are assumed to be earlier registrations
+                if earliest_user_id is None or int(user_id) < int(earliest_user_id):
+                    earliest_user_id = user_id
+                    winner_strategy_id = strategy_id
+    
+    # Check if winning bid meets reserve price
+    reserve_price = auction.get('reserve_price')
+    if reserve_price and winner_bid_amount < reserve_price:
+        # No valid bids that meet the reserve price
+        return finalize_instant_auction(auction_id, None, 0)
+    
+    # Create winning bid record if we have a winner
+    if winner_strategy_id:
+        winner_strategy = applicable_strategies[winner_strategy_id]
+        user_id = winner_strategy.get('user_id')
+        
+        # Find the winning bid in our registry and mark it as winning
+        winning_bid_id = None
+        for bid_id, bid in bids.items():
+            if (bid["auction_id"] == auction_id and 
+                bid["strategy_id"] == winner_strategy_id and 
+                bid["amount"] == winner_bid_amount):
+                bid["status"] = "winning"
+                winning_bid_id = bid_id
+                bids[bid_id] = bid
+                break
+        
+        # Update auction with winning information
+        auction["current_high_bid"] = winner_bid_amount
+        auction["current_high_bidder_id"] = user_id
+        auction["updated_at"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save all changes
+        auction_data[auction_id] = auction
+        storage.save_bids(bids)
+        storage.save_auctions(auction_data)
+        
+        # Finalize the auction
+        return finalize_instant_auction(auction_id, winning_bid_id, winner_bid_amount)
+    
+    # No winner determined
+    return finalize_instant_auction(auction_id, None, 0)
+
+def find_applicable_strategies(auction):
+    """Find all strategies that apply to this auction based on matching criteria"""
+    moment_id = auction.get('moment_id')
+    game_id = auction.get('game_id')
+    period = auction.get('period')
+    team_id = auction.get('team_id')
+    players = auction.get('players', [])
+    
+    applicable_strategies = {}
+    
+    for strategy_id, strategy in strategies.items():
+        # Check if strategy is active
+        if strategy.get('status', 'active') != 'active':
+            continue
+        
+        # Check if strategy is for this moment and game
+        if strategy.get('moment_id') != moment_id or int(strategy.get('game_id')) != int(game_id):
+            continue
+        
+        # Check if strategy applies to the period
+        strategy_period = strategy.get('period_restrictions')
+        if strategy_period and period not in strategy_period.split(','):
+            continue
+        
+        # Check if strategy applies to the team
+        strategy_team = strategy.get('team_focus', 'both')
+        if strategy_team != 'both' and strategy_team != team_id and team_id != 'both':
+            continue
+        
+        # Check if strategy applies to specific players
+        strategy_player = strategy.get('player_focus')
+        if strategy_player:
+            strategy_players = [p.strip() for p in strategy_player.split(',')]
+            player_match = False
+            
+            # If any player in the auction is in the strategy's focus, it's a match
+            for player in players:
+                if player in strategy_players:
+                    player_match = True
+                    break
+            
+            if not player_match:
+                continue
+        
+        # If we got here, the strategy is applicable
+        applicable_strategies[strategy_id] = strategy
+    
+    return applicable_strategies
+
+def finalize_instant_auction(auction_id, winning_bid_id=None, winning_amount=0):
+    """Complete an instant auction and create the result record"""
+    if auction_id not in auction_data:
+        return {"success": False, "message": "Auction not found"}
+
+    auction = auction_data[auction_id]
+
+    # Update auction status to completed
+    auction["status"] = "completed"
+    auction["executed_at"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    auction_data[auction_id] = auction
+
+    # If no winning bid, just complete the auction
+    if not winning_bid_id:
+        storage.save_auctions(auction_data)
+        return {"success": True, "winner": False, "message": "Auction completed with no winning bids"}
+
+    # Get the winning bid
+    winning_bid = bids.get(winning_bid_id)
+    if not winning_bid:
+        return {"success": False, "message": "Winning bid not found"}
+
+    winning_user_id = winning_bid["user_id"]
+    winning_strategy_id = winning_bid.get("strategy_id")  # Get the winning strategy ID
+    winning_user = users.get(winning_user_id, {})
+    winning_user_name = winning_user.get('name', 'Unknown User')
+
+    # Calculate commissions and shares
+    commission_rate = 0.05  # 5%
+    broadcaster_rate = 0.85  # 85%
+    platform_rate = 0.10  # 10%
+
+    commission_amount = winning_amount * commission_rate
+    broadcaster_share = winning_amount * broadcaster_rate
+    platform_share = winning_amount * platform_rate
+
+    # Create auction result
+    result_id = str(uuid.uuid4())
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # CHANGE: Set payment status to completed by default
+    result = {
+        "id": result_id,
+        "auction_id": auction_id,
+        "winning_bid_id": winning_bid_id,
+        "winning_user_id": winning_user_id,
+        "winning_strategy_id": winning_strategy_id,
+        "winning_amount": winning_amount,
+        "payment_status": "completed",  # Changed from "pending" to "completed"
+        "payment_transaction_id": f"AUTO-{uuid.uuid4()}",
+        "commission_amount": commission_amount,
+        "broadcaster_share": broadcaster_share,
+        "platform_share": platform_share,
+        "ad_display_status": "pending",
+        "created_at": now,
+        "updated_at": now
+    }
+
+    # Save everything
+    auction_results[result_id] = result
+    storage.save_bids(bids)
+    storage.save_auctions(auction_data)
+    storage.save_auction_results(auction_results)
+
+    return {
+        "success": True,
+        "winner": True,
+        "result_id": result_id,
+        "winning_user_id": winning_user_id,
+        "winning_user_name": winning_user_name,
+        "winning_amount": winning_amount,
+        "winning_strategy_id": winning_strategy_id
+    }
+
+def place_bid(auction_id, user_id, amount, strategy_id=None, max_bid=None):
+    """Place a bid on an auction"""
+    # Check if auction exists and is active
+    if auction_id not in auction_data:
+        return {"success": False, "message": "Auction not found"}
+    
+    auction = auction_data[auction_id]
+    if auction["status"] != "active":
+        return {"success": False, "message": f"Auction is not active (status: {auction['status']})"}
+    
+    # Convert amount to float for comparison
+    amount = float(amount)
+    
+    # Validate bid amount (must be greater than current high bid + increment)
+    min_valid_bid = auction["current_high_bid"] + auction["increment_amount"]
+    if amount < min_valid_bid:
+        return {"success": False, "message": f"Bid amount must be at least ${min_valid_bid:.2f}"}
+    
+    # Check if user has sufficient funds
+    user = users.get(user_id)
+    if not user:
+        return {"success": False, "message": "User not found"}
+    
+    if float(user.get("budget", 0)) < amount:
+        return {"success": False, "message": "Insufficient funds"}
+    
+    # Generate bid ID
+    bid_id = str(uuid.uuid4())
+    
+    # Create bid object
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    bid = {
+        "id": bid_id,
+        "auction_id": auction_id,
+        "user_id": user_id,
+        "strategy_id": strategy_id,
+        "amount": amount,
+        "status": "active",
+        "timestamp": now,
+        "is_automated": bool(strategy_id),
+        "max_bid": float(max_bid) if max_bid else amount
+    }
+    
+    # Update previous high bid status to 'outbid' if it exists
+    if auction["current_high_bidder_id"]:
+        for old_bid_id, old_bid in bids.items():
+            if (old_bid["auction_id"] == auction_id and 
+                old_bid["user_id"] == auction["current_high_bidder_id"] and
+                old_bid["status"] == "active"):
+                old_bid["status"] = "outbid"
+                bids[old_bid_id] = old_bid
+    
+    # Update auction with new high bid
+    auction["current_high_bid"] = amount
+    auction["current_high_bidder_id"] = user_id
+    auction["updated_at"] = now
+    
+    # Save the bid and updated auction
+    bids[bid_id] = bid
+    auction_data[auction_id] = auction
+    
+    storage.save_bids(bids)
+    storage.save_auction_data(auction_data)
+    
+    return {"success": True, "bid_id": bid_id, "message": "Bid placed successfully"}
+
+def place_bid_from_strategy(auction_id, strategy_id):
+    """Place a bid based on a user's strategy"""
+    # Find the strategy
+    if strategy_id not in strategies:
+        return {"success": False, "message": "Strategy not found"}
+    
+    strategy = strategies[strategy_id]
+    user_id = strategy.get('user_id')
+    
+    # Get bid parameters from strategy
+    base_bid = float(strategy.get('base_bid', 0))
+    max_bid = float(strategy.get('max_bid', 0))
+    
+    # Get current auction status
+    if auction_id not in auction_data:
+        return {"success": False, "message": "Auction not found"}
+    
+    auction = auction_data[auction_id]
+    if auction["status"] != "active":
+        return {"success": False, "message": f"Auction is not active"}
+    
+    # Calculate appropriate bid amount based on strategy and current high bid
+    min_valid_bid = auction["current_high_bid"] + auction["increment_amount"]
+    
+    # Start with base bid, but ensure it's at least the minimum valid bid
+    bid_amount = max(base_bid, min_valid_bid)
+    
+    # Don't exceed max bid
+    if bid_amount > max_bid:
+        # Strategy's max bid is less than minimum valid bid
+        return {"success": False, "message": "Strategy max bid too low for current auction state"}
+    
+    # Place the bid using existing function
+    return place_bid(auction_id, user_id, bid_amount, strategy_id, max_bid)
+
+def process_all_auction_data():
+    """Process all active auctions with all relevant strategies"""
+    results = []
+    
+    # Get current time for status updates
+    now = datetime.now()
+    
+    # Update auction statuses based on time
+    for auction_id, auction in list(auctions.items()):
+        if auction['status'] != 'cancelled':
+            start_time = datetime.strptime(auction['start_time'], '%Y-%m-%d %H:%M:%S')
+            end_time = datetime.strptime(auction['end_time'], '%Y-%m-%d %H:%M:%S')
+            
+            # Activate pending auctions that should start
+            if auction['status'] == 'pending' and now >= start_time:
+                auction['status'] = 'active'
+                auction_data[auction_id] = auction
+                print(f"Activated auction {auction_id}")
+            
+            # Finalize active auctions that should end
+            elif auction['status'] == 'active' and now >= end_time:
+                result = finalize_auction(auction_id)
+                print(f"Finalized auction {auction_id}: {result}")
+                results.append(result)
+                continue  # Skip processing bids for finalized auctions
+    
+    # For each active auction, process all relevant strategies
+    for auction_id, auction in auction_data.items():
+        if auction['status'] == 'active':
+            moment_id = auction['moment_id']
+            game_id = auction['game_id']
+            
+            # Find all strategies for this moment in this game
+            matching_strategies = []
+            for strategy_id, strategy in strategies.items():
+                if (strategy['moment_id'] == moment_id and 
+                    int(strategy['game_id']) == int(game_id) and
+                    strategy.get('status', 'active') == 'active'):
+                    matching_strategies.append(strategy_id)
+            
+            # Process each matching strategy
+            for strategy_id in matching_strategies:
+                result = place_bid_from_strategy(auction_id, strategy_id)
+                print(f"Strategy {strategy_id} bid result: {result}")
+                results.append(result)
+    
+    # Save any changes
+    storage.save_auctions(auction_data)
+    storage.save_bids(bids)
+    
+    return results
+
+def process_all_pending_payments():
+    """Process all pending payments to completed status"""
+    updates_count = 0
+    
+    for result_id, result in auction_results.items():
+        if result.get('payment_status') == 'pending':
+            result['payment_status'] = 'completed'
+            result['payment_transaction_id'] = f"BACKFILL-{uuid.uuid4()}"
+            result['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            auction_results[result_id] = result
+            updates_count += 1
+    
+    if updates_count > 0:
+        storage.save_auction_results(auction_results)
+    
+    return updates_count
+
+def finalize_auction(auction_id):
+    """Complete an auction and create the result record"""
+    if auction_id not in auction_data:
+        return {"success": False, "message": "Auction not found"}
+
+    auction = auction_data[auction_id]
+    if auction["status"] != "active":
+        return {"success": False, "message": f"Cannot finalize auction with status: {auction['status']}"}
+
+    # Find the winning bid
+    winning_bid_id = None
+    winning_bid = None
+
+    for bid_id, bid in bids.items():
+        if bid["auction_id"] == auction_id and bid["status"] == "active":
+            if not winning_bid or bid["amount"] > winning_bid["amount"]:
+                winning_bid_id = bid_id
+                winning_bid = bid
+
+    if not winning_bid:
+        # No bids were placed, auction unsuccessful
+        auction["status"] = "completed"
+        auction_data[auction_id] = auction
+        storage.save_auctions(auction_data)
+        return {"success": True, "winner": False, "message": "Auction completed with no bids"}
+
+    # Update winning bid status
+    winning_bid["status"] = "winning"
+    bids[winning_bid_id] = winning_bid
+
+    # Calculate commissions and shares
+    winning_amount = winning_bid["amount"]
+    winning_user_id = winning_bid["user_id"]
+    commission_rate = 0.05  # 5%
+    broadcaster_rate = 0.85  # 85%
+    platform_rate = 0.10  # 10%
+
+    commission_amount = winning_amount * commission_rate
+    broadcaster_share = winning_amount * broadcaster_rate
+    platform_share = winning_amount * platform_rate
+
+    # Create auction result
+    result_id = str(uuid.uuid4())
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # CHANGE: Set payment status to completed by default
+    result = {
+        "id": result_id,
+        "auction_id": auction_id,
+        "winning_bid_id": winning_bid_id,
+        "winning_user_id": winning_user_id,
+        "winning_strategy_id": winning_bid.get("strategy_id"),  # Store strategy ID if available
+        "winning_amount": winning_amount,
+        "payment_status": "completed",  # Changed from "pending" to "completed"
+        "payment_transaction_id": f"AUTO-{uuid.uuid4()}",
+        "commission_amount": commission_amount,
+        "broadcaster_share": broadcaster_share,
+        "platform_share": platform_share,
+        "ad_display_status": "pending",
+        "created_at": now,
+        "updated_at": now
+    }
+
+    # Update auction status
+    auction["status"] = "completed"
+    auction_data[auction_id] = auction
+
+    # Save everything
+    auction_results[result_id] = result
+    storage.save_bids(bids)
+    storage.save_auctions(auction_data)
+    storage.save_auction_results(auction_results)
+
+    return {
+        "success": True,
+        "winner": True,
+        "result_id": result_id,
+        "winning_user_id": winning_user_id,
+        "winning_amount": winning_amount
+    }
 
 # Routes
 @app.route('/')
@@ -456,19 +1146,38 @@ def profile():
     # Get user's strategies
     user_strategies = {k: v for k, v in strategies.items() if v['user_id'] == user['id']}
 
+    # Get user's auction results
+    user_auction_results = []
+    for result_id, result in auction_results.items():
+        if result['winning_user_id'] == user['id']:
+            # Add additional info to the result
+            result_copy = dict(result)
+            result_copy['auction'] = auction_data.get(result['auction_id'], {})
+            result_copy['strategy'] = strategies.get(result.get('winning_strategy_id'), {})
+            
+            # Add game info
+            auction = auction_data.get(result['auction_id'], {})
+            game = next((g for g in upcoming_games if g['id'] == auction.get('game_id')), None)
+            if game:
+                result_copy['game_info'] = f"{game['away']} @ {game['home']} - {game['date']}"
+            
+            user_auction_results.append(result_copy)
+
     # Debug prints
     print(f"\n=== PROFILE ACCESS ===")
     print(f"User: {user['name']} (ID: {user['id']})")
     print(f"Total Budget: ${user['total_budget']:,.2f}")
-    print(f"Used Budget: ${user['used_budget']:,.2f}")
     print(f"Available Budget: ${user['available_budget']:,.2f}")
+    print(f"Number of wins: {len(user_auction_results)}")
     print(f"===========================\n")
 
     return render_template('profile.html',
                           user=user,
                           user_strategies=user_strategies,
+                          user_auction_results=user_auction_results,
                           upcoming_games=upcoming_games,
-                          moments=moments)
+                          moments=moments,
+                          auctions=auction_data)
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
@@ -825,7 +1534,8 @@ def game_detail(game_id):
                           strategies=strategies,
                           user_strategies=user_game_strategies,
                           moment_strategy_map=moment_strategy_map,
-                          debug_data=debug_data)
+                          debug_data=debug_data,
+                          auctions=auction_data)
 
 @app.route('/moment/<int:moment_id>')
 def moment_detail(moment_id):
@@ -1023,24 +1733,16 @@ def setup_strategy():
     # IMPORTANT FIX: Split by '?' to handle malformed URL parameters
     moment_id = moment_id_raw.split('?')[0]
 
-    print(f"Raw moment_id from URL: {moment_id_raw}")
-    print(f"Cleaned moment_id: {moment_id}")
-    print(f"Available moment keys: {list(moments.keys())}")
-
     # Get the moment data - try using string key
     moment = moments.get(moment_id)
-    print(f"Lookup result: {moment}")
 
     if not moment:
-        print(f"Moment with ID {moment_id} not found in moments dictionary")
         flash(f'Moment not found. Please select a valid moment.', 'error')
         return redirect(url_for('dashboard'))
 
     # Create a new moment dictionary with id explicitly set
     processed_moment = dict(moment)  # Create a copy to avoid modifying the original
     processed_moment['id'] = moment_id  # Make sure the id field exists
-
-    print(f"Processed moment for template: {processed_moment}")
 
     # Get game_id directly from request.args
     selected_game_id = request.args.get('game_id')
@@ -1057,7 +1759,6 @@ def setup_strategy():
         if strategy_moment_id == moment_id and strategy.get('user_id') == user['id']:
             existing_strategy = dict(strategy)  # Create a copy
             existing_strategy['id'] = strat_id
-            print(f"Found existing strategy: {strat_id}")
             break
 
     if request.method == 'POST':
@@ -1087,6 +1788,12 @@ def setup_strategy():
             flash('Invalid numeric values.', 'error')
             return redirect(url_for('setup_strategy', moment_id=moment_id, game_id=selected_game_id))
 
+        # Check if user has sufficient available budget for max_bid
+        # Now we check available budget (total - spent), not allocated budget
+        if max_bid > user['available_budget']:
+            flash(f'Insufficient available budget. You have ${user["available_budget"]:,.2f} available. This does not include money allocated to other strategies.', 'error')
+            return redirect(url_for('setup_strategy', moment_id=moment_id, game_id=selected_game_id))
+
         # Generate a unique ID for the new strategy if it doesn't exist
         if existing_strategy:
             strategy_id = existing_strategy['id']
@@ -1113,17 +1820,13 @@ def setup_strategy():
         if processed_moment['name'] == 'Overtime Goal/Shootout' and specific_scenario:
             new_strategy['specific_scenario'] = specific_scenario
 
-        # Add to strategies dictionary
+        # Add to strategies dictionary (NO BUDGET DEDUCTION HERE)
         strategies[strategy_id] = new_strategy
 
         # Save changes to file
         storage.save_strategies(strategies)
 
-        # Debug print
-        print(f"{'Updated' if existing_strategy else 'Created new'} strategy: (ID: {strategy_id})")
-        print(f"Strategy details: {new_strategy}")
-
-        flash(f"Bidding strategy {'updated' if existing_strategy else 'created'} successfully!", 'success')
+        flash(f"Bidding strategy {'updated' if existing_strategy else 'created'} successfully! Money will only be spent when you win auctions.", 'success')
 
         # Redirect back to the game detail page if we have a game_id
         if game_id:
@@ -1131,19 +1834,10 @@ def setup_strategy():
         else:
             return redirect(url_for('dashboard'))
 
-    # Add debug prints right before returning the template
-    print("==== TEMPLATE VARIABLES DEBUG ====")
-    print(f"moment: {processed_moment}")
-    print(f"moment type: {type(processed_moment)}")
-    print(f"moment id: {processed_moment.get('id')}")
-    print(f"moment id type: {type(processed_moment.get('id'))}")
-    print(f"moment name: {processed_moment.get('name')}")
-    print("=================================")
-
-    # Return the template with our processed moment
+    # Pass budget info to template
     return render_template('setup_strategy.html',
                           user=user,
-                          moment=processed_moment,  # Use the processed copy
+                          moment=processed_moment,
                           moments=moments,
                           upcoming_games=upcoming_games,
                           existing_strategy=existing_strategy,
@@ -1222,10 +1916,28 @@ def my_strategies():
         strategy['moment'] = moments.get(strategy['moment_id'])
         strategy['game'] = next((g for g in upcoming_games if g['id'] == strategy['game_id']), None)
 
+    # Get user's auction results
+    user_auction_results = []
+    for result_id, result in auction_results.items():
+        if result['winning_user_id'] == user['id']:
+            # Add additional info to the result
+            result_copy = dict(result)
+            result_copy['auction'] = auction_data.get(result['auction_id'], {})
+            result_copy['strategy'] = strategies.get(result.get('winning_strategy_id'), {})
+            
+            # Add game info
+            auction = auction_data.get(result['auction_id'], {})
+            game = next((g for g in upcoming_games if g['id'] == auction.get('game_id')), None)
+            if game:
+                result_copy['game_info'] = f"{game['away']} @ {game['home']} - {game['date']}"
+            
+            user_auction_results.append(result_copy)
+
     # Debug prints
     print(f"\n=== MY STRATEGIES ACCESS ===")
     print(f"User: {user['name']} (ID: {user['id']})")
     print(f"Number of strategies: {len(user_strategies)}")
+    print(f"Number of wins: {len(user_auction_results)}")
     for strat_id, strategy in user_strategies.items():
         moment_name = strategy.get('moment', {}).get('name', 'Unknown Moment')
         game_away = strategy.get('game', {}).get('away', 'Unknown')
@@ -1233,7 +1945,14 @@ def my_strategies():
         print(f"  Strategy {strat_id}: {moment_name} for {game_away} @ {game_home}")
     print(f"===========================\n")
 
-    return render_template('my_strategies.html', user=user, strategies=user_strategies)
+    return render_template('my_strategies.html', 
+                         user=user, 
+                         strategies=user_strategies,
+                         user_strategies=user_strategies,
+                         user_auction_results=user_auction_results,
+                         moments=moments,
+                         upcoming_games=upcoming_games,
+                         auctions=auction_data)
 
 @app.route('/remove_strategy/<strategy_id>', methods=['POST', 'GET'])
 def remove_strategy(strategy_id):
@@ -1368,6 +2087,666 @@ def debug_info():
 
     return jsonify(debug_info)
 
+@app.route('/admin/games')
+def admin_games():
+    """Admin view for all games with status management"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Just return a blank template, JavaScript will load the data
+    return render_template('admin_games_js.html', user=user)
+
+@app.route('/admin/games/data')
+def admin_games_data():
+    """API endpoint to get game data as JSON for the admin interface"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Create explicit lists for each status
+    live_games = []
+    pending_games = []
+    finished_games = []
+    
+    for game in upcoming_games:
+        status = game.get('status', 'pending')
+        game_data = {
+            'id': game.get('id'),
+            'away': game.get('away'),
+            'home': game.get('home'),
+            'date': game.get('date'),
+            'time': game.get('time'),
+            'status': status
+        }
+        
+        if status == 'live':
+            live_games.append(game_data)
+        elif status == 'pending':
+            pending_games.append(game_data)
+        elif status == 'finished':
+            finished_games.append(game_data)
+    
+    return jsonify({
+        'live_games': live_games,
+        'pending_games': pending_games,
+        'finished_games': finished_games,
+        'all_games': [
+            {'id': g.get('id'), 'away': g.get('away'), 'home': g.get('home'), 
+             'date': g.get('date'), 'time': g.get('time'), 'status': g.get('status', 'pending')}
+            for g in upcoming_games
+        ]
+    })
+
+@app.route('/admin/game/<int:game_id>/status', methods=['POST'])
+def update_game_status(game_id):
+    """Update the status of a game"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    # Get new status from request
+    new_status = request.json.get('status')
+    print(f"\n=== UPDATING GAME STATUS ===")
+    print(f"Game ID: {game_id} (type: {type(game_id).__name__})")
+    print(f"New status: '{new_status}' (type: {type(new_status).__name__})")
+
+    if new_status not in ['pending', 'live', 'finished']:
+        return jsonify({'success': False, 'message': 'Invalid status'}), 400
+
+    # Find and update the game
+    game_found = False
+    for i, game in enumerate(upcoming_games):
+        game_id_from_game = game.get('id')
+        
+        # Compare game IDs and handle different types
+        if isinstance(game_id_from_game, str) and game_id_from_game.isdigit():
+            game_id_from_game = int(game_id_from_game)
+        
+        if game_id_from_game == game_id:
+            game_found = True
+            old_status = game.get('status')
+            game['status'] = new_status
+            
+            # Special handling for finished to pending transition (Reset Game)
+            if old_status == 'finished' and new_status == 'pending':
+                print(f"RESETTING GAME: From finished to pending. Auction results preserved.")
+                # We deliberately don't reset any auction results here
+                # The game is simply set back to pending for new auctions
+            
+            print(f"Found game! Updating status from '{old_status}' to '{new_status}'")
+            print(f"Updated game object: {game}")
+            
+            # Save to storage
+            save_result = storage.save_data(upcoming_games, storage.GAMES_FILE)
+            print(f"Save result: {save_result}")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Game status updated to {new_status}',
+                'game_id': game_id,
+                'new_status': new_status
+            })
+
+    print(f"Game with ID {game_id} not found!")
+    return jsonify({'success': False, 'message': 'Game not found'}), 404
+
+@app.route('/admin/financials')
+def admin_financials():
+    """Admin view for financial tracking of all auctions"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Gather all auction results with payment information
+    financial_data = []
+    total_platform_revenue = 0
+    total_broadcaster_revenue = 0
+    total_commission = 0
+    
+    # First, make sure all completed auctions have proper financial data
+    for auction_id, auction in auction_data.items():
+        if auction["status"] == "completed":
+            # Check if there's a corresponding auction result
+            result_exists = False
+            for result in auction_results.values():
+                if result["auction_id"] == auction_id:
+                    result_exists = True
+                    break
+            
+            # If no result exists but auction is completed, check if there's a winning bid
+            if not result_exists:
+                # Find the winning bid
+                winning_bid = None
+                for bid in bids.values():
+                    if bid["auction_id"] == auction_id and bid["status"] == "winning":
+                        winning_bid = bid
+                        break
+                
+                # If we found a winning bid, create a result record
+                if winning_bid:
+                    winning_amount = float(winning_bid["amount"])
+                    winning_user_id = winning_bid["user_id"]
+                    
+                    # Calculate commissions and shares
+                    commission_rate = 0.05  # 5%
+                    broadcaster_rate = 0.85  # 85%
+                    platform_rate = 0.10  # 10%
+                    
+                    commission_amount = winning_amount * commission_rate
+                    broadcaster_share = winning_amount * broadcaster_rate
+                    platform_share = winning_amount * platform_rate
+                    
+                    # Create the result record
+                    result_id = str(uuid.uuid4())
+                    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    result = {
+                        "id": result_id,
+                        "auction_id": auction_id,
+                        "winning_bid_id": winning_bid["id"],
+                        "winning_user_id": winning_user_id,
+                        "winning_strategy_id": winning_bid.get("strategy_id"),
+                        "winning_amount": winning_amount,
+                        "payment_status": "completed",  # Auto-complete payment
+                        "payment_transaction_id": f"BACKFILL-{uuid.uuid4()}",
+                        "commission_amount": commission_amount,
+                        "broadcaster_share": broadcaster_share,
+                        "platform_share": platform_share,
+                        "ad_display_status": "completed",
+                        "created_at": now,
+                        "updated_at": now
+                    }
+                    
+                    auction_results[result_id] = result
+                    storage.save_auction_results(auction_results)
+                    print(f"Created missing auction result for auction {auction_id}")
+    
+    # Process all auction results for the financials display
+    for result_id, result in auction_results.items():
+        # Ensure we have all required fields
+        if not all(key in result for key in ['winning_amount', 'commission_amount', 'broadcaster_share', 'platform_share']):
+            # Calculate missing financial data
+            winning_amount = float(result.get('winning_amount', 0))
+            
+            # Add missing financial fields
+            if 'commission_amount' not in result:
+                result['commission_amount'] = winning_amount * 0.05
+            
+            if 'broadcaster_share' not in result:
+                result['broadcaster_share'] = winning_amount * 0.85
+                
+            if 'platform_share' not in result:
+                result['platform_share'] = winning_amount * 0.10
+                
+            # Update the record
+            auction_results[result_id] = result
+            storage.save_auction_results(auction_results)
+        
+        # Now process the result for display
+        auction = auction_data.get(result.get('auction_id'))
+        if not auction:
+            continue
+            
+        winning_user = users.get(result.get('winning_user_id'))
+        
+        # Format the data for display
+        financial_entry = {
+            'result_id': result_id,
+            'auction_id': result.get('auction_id'),
+            'game_id': auction.get('game_id'),
+            'moment_id': auction.get('moment_id'),
+            'winner_name': winning_user.get('name', 'Unknown') if winning_user else 'Unknown',
+            'winner_company': winning_user.get('company', 'Unknown') if winning_user else 'Unknown',
+            'amount': float(result.get('winning_amount', 0)),
+            'payment_status': result.get('payment_status', 'pending'),
+            'completed_at': result.get('updated_at'),
+            'commission_amount': float(result.get('commission_amount', 0)),
+            'broadcaster_share': float(result.get('broadcaster_share', 0)),
+            'platform_share': float(result.get('platform_share', 0))
+        }
+        
+        # Add game and moment info
+        game = next((g for g in upcoming_games if g['id'] == auction.get('game_id')), None)
+        if game:
+            financial_entry['game_info'] = f"{game['away']} @ {game['home']} ({game['date']})"
+        
+        moment = moments.get(str(auction.get('moment_id')))
+        if moment:
+            financial_entry['moment_name'] = moment.get('name', 'Unknown Moment')
+        
+        financial_data.append(financial_entry)
+        
+        # Add to totals if payment is completed
+        if result.get('payment_status') == 'completed':
+            total_platform_revenue += financial_entry['platform_share']
+            total_broadcaster_revenue += financial_entry['broadcaster_share']
+            total_commission += financial_entry['commission_amount']
+
+    # Sort by completion date, most recent first
+    financial_data.sort(key=lambda x: x.get('completed_at', ''), reverse=True)
+    
+    return render_template('admin_financials.html',
+                          user=user,
+                          financial_data=financial_data,
+                          total_platform_revenue=total_platform_revenue,
+                          total_broadcaster_revenue=total_broadcaster_revenue,
+                          total_commission=total_commission,
+                          moments=moments,
+                          upcoming_games=upcoming_games)
+
+@app.route('/admin/process_all_pending_payments')
+def admin_process_all_pending_payments():
+    """Admin utility to process all pending payments at once"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    updates_count = process_all_pending_payments()
+    
+    if updates_count > 0:
+        flash(f'Successfully processed {updates_count} pending payments!', 'success')
+    else:
+        flash('No pending payments found to process.', 'info')
+    
+    return redirect(url_for('admin_financials'))
+
+@app.route('/admin/mark_payment_complete/<result_id>')
+def admin_mark_payment_complete(result_id):
+    """Admin function to manually mark a payment as complete"""
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('dashboard'))
+        
+    if result_id in auction_results:
+        result = auction_results[result_id]
+        result['payment_status'] = 'completed'
+        result['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save changes
+        auction_results[result_id] = result
+        storage.save_auction_results(auction_results)
+        
+        flash('Payment marked as complete successfully!', 'success')
+    else:
+        flash('Auction result not found.', 'error')
+        
+    return redirect(url_for('admin_financials'))
+
+# Auction Routes
+@app.route('/auctions')
+def auction_listings():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+
+    # Get auctions by status
+    active_auctions = {}
+    upcoming_auctions = {}
+    completed_auctions = {}
+
+    # Current time for determining auction status
+    now = datetime.now()
+
+    for auction_id, auction in auction_data.items():
+        # Check auction type
+        if auction.get('auction_type') == 'instant':
+            # Handle instant auctions based on their status
+            if auction['status'] == 'pending':
+                upcoming_auctions[auction_id] = auction
+            elif auction['status'] == 'active':
+                active_auctions[auction_id] = auction
+            else:  # 'completed', 'cancelled', etc.
+                completed_auctions[auction_id] = auction
+        else:
+            # Handle traditional auctions with start/end times
+            try:
+                # Convert string timestamps to datetime objects
+                start_time = datetime.strptime(auction['start_time'], '%Y-%m-%d %H:%M:%S')
+                end_time = datetime.strptime(auction['end_time'], '%Y-%m-%d %H:%M:%S')
+                
+                # Update auction status based on current time
+                if auction['status'] != 'cancelled':
+                    if now < start_time:
+                        auction['status'] = 'pending'
+                        upcoming_auctions[auction_id] = auction
+                    elif now >= start_time and now < end_time:
+                        auction['status'] = 'active'
+                        active_auctions[auction_id] = auction
+                    else:
+                        if auction['status'] != 'completed':
+                            # Auto-finalize any auction that's past end time but not marked completed
+                            finalize_auction(auction_id)
+                        auction['status'] = 'completed'
+                        completed_auctions[auction_id] = auction
+            except (KeyError, ValueError) as e:
+                # Handle any missing fields or date parsing issues
+                print(f"Error processing auction {auction_id}: {e}")
+                if auction['status'] == 'completed' or auction['status'] == 'cancelled':
+                    completed_auctions[auction_id] = auction
+                else:
+                    # Default to upcoming if status can't be determined
+                    upcoming_auctions[auction_id] = auction
+
+    # Pass the current datetime to template for progress calculation
+    template_now = now
+
+    return render_template('auctions.html',
+                          user=user,
+                          active_auctions=active_auctions,
+                          upcoming_auctions=upcoming_auctions,
+                          completed_auctions=completed_auctions,
+                          moments=moments,
+                          upcoming_games=upcoming_games,
+                          now=template_now,
+                          users=users)
+
+@app.route('/create_auction', methods=['GET'])
+def create_auction_form():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    # Check if user is admin
+    if not user.get('is_admin', False):
+        flash('You do not have permission to create auctions.', 'error')
+        return redirect(url_for('auctions'))
+    
+    return render_template('create_auction.html',
+                          user=user,
+                          moments=moments,
+                          upcoming_games=upcoming_games)
+
+@app.route('/create_auction', methods=['POST'])
+def create_auction_submit():
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+
+    # Check if user is admin
+    if not user.get('is_admin', False):
+        flash('You do not have permission to create auctions.', 'error')
+        return redirect(url_for('auction_listings'))
+
+    # Get form data
+    game_id = request.form.get('game_id')
+    moment_id = request.form.get('moment_id')
+    base_price = request.form.get('base_price', 1000)
+    reserve_price = request.form.get('reserve_price')
+    period = request.form.get('period', '1')
+    team_id = request.form.get('team_id')
+    event_importance = request.form.get('event_importance', 'normal')
+    execute_immediately = 'execute_immediately' in request.form
+    
+    # Handle multiple player selection
+    players = request.form.getlist('players[]')
+
+    # Basic validation
+    if not all([game_id, moment_id, base_price, team_id]) or not players:
+        flash('All required fields must be provided.', 'error')
+        return redirect(url_for('create_auction_form'))
+
+    # Create the instant auction
+    auction_id = create_instant_auction(
+        moment_id,
+        int(game_id),
+        float(base_price),
+        float(reserve_price) if reserve_price else None,
+        period,
+        team_id,
+        players,
+        event_importance
+    )
+
+    # Execute the auction immediately if requested
+    if execute_immediately:
+        result = execute_instant_auction(auction_id)
+        if result.get('success'):
+            if result.get('winner'):
+                flash(f'Auction executed successfully! Winner: {result.get("winning_user_name")} with bid of ${result.get("winning_amount"):,.2f}', 'success')
+            else:
+                flash('Auction executed but no winner was determined. Reserve price may not have been met.', 'warning')
+        else:
+            flash(f'Error executing auction: {result.get("message")}', 'error')
+    else:
+        flash('Instant auction created successfully! It can be executed from the auction details page.', 'success')
+
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+@app.route('/process_auctions')
+def process_auctions_route():
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    results = process_all_auctions()
+    
+    flash(f'Processed {len(results)} auction actions.', 'success')
+    return redirect(url_for('auctions'))
+
+@app.route('/auction/<auction_id>')
+def auction_detail(auction_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+
+    # Check if auction exists
+    if auction_id not in auction_data:
+        flash('Auction not found.', 'error')
+        return redirect(url_for('auction_listings'))
+
+    auction = auction_data[auction_id]
+
+    # Get bids for this auction - we'll still collect these for the template
+    auction_bids = []
+    for bid_id, bid in bids.items():
+        if bid['auction_id'] == auction_id:
+            auction_bids.append(bid)
+
+    # Sort bids by timestamp (newest first)
+    auction_bids.sort(key=lambda x: x['timestamp'], reverse=True)
+
+    # Check if the auction status needs updating based on time
+    if auction.get('auction_type') != 'instant':
+        now = datetime.now()
+        try:
+            start_time = datetime.strptime(auction['start_time'], '%Y-%m-%d %H:%M:%S')
+            end_time = datetime.strptime(auction['end_time'], '%Y-%m-%d %H:%M:%S')
+
+            if auction['status'] != 'cancelled':
+                if now < start_time:
+                    auction['status'] = 'pending'
+                elif now >= start_time and now < end_time:
+                    auction['status'] = 'active'
+                elif now >= end_time and auction['status'] != 'completed':
+                    # Auto-finalize auction if it's past end time
+                    finalize_auction(auction_id)
+                    auction['status'] = 'completed'
+        except (KeyError, ValueError) as e:
+            print(f"Error processing auction times: {e}")
+
+    return render_template('auction_detail.html',
+                          user=user,
+                          auction=auction,
+                          auction_bids=auction_bids,
+                          moments=moments,
+                          upcoming_games=upcoming_games,
+                          users=users,
+                          auction_results=auction_results,
+                          strategies=strategies,   # Add this line
+                          bids=bids)              # Add this line
+
+@app.route('/auction/<auction_id>/bid', methods=['POST'])
+def place_bid_route(auction_id):
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+    
+    # Get form data
+    bid_amount = request.form.get('bid_amount')
+    auto_bid = request.form.get('auto_bid') == '1'
+    max_bid = request.form.get('max_bid') if auto_bid else None
+    
+    if not bid_amount:
+        flash('Bid amount is required.', 'error')
+        return redirect(url_for('auction_detail', auction_id=auction_id))
+    
+    # Place the bid
+    result = place_bid(auction_id, user['id'], float(bid_amount), None, max_bid)
+    
+    if result['success']:
+        flash('Bid placed successfully!', 'success')
+    else:
+        flash(f"Bid failed: {result['message']}", 'error')
+    
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+# Admin routes for auction management
+@app.route('/auction/<auction_id>/activate')
+def activate_auction(auction_id):
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('auctions'))
+    
+    if auction_id in auctions:
+        auctions[auction_id]['status'] = 'active'
+        storage.save_auctions(auctions)
+        flash('Auction activated successfully!', 'success')
+    else:
+        flash('Auction not found.', 'error')
+    
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+@app.route('/auction/<auction_id>/execute')
+def execute_auction_route(auction_id):
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('auction_listings'))
+
+    if auction_id in auction_data:
+        auction = auction_data[auction_id]
+        
+        if auction.get('auction_type') != 'instant':
+            flash('This is not an instant auction.', 'error')
+            return redirect(url_for('auction_detail', auction_id=auction_id))
+        
+        if auction['status'] != 'pending':
+            flash(f'Cannot execute auction with status: {auction["status"]}', 'error')
+            return redirect(url_for('auction_detail', auction_id=auction_id))
+        
+        result = execute_instant_auction(auction_id)
+        if result.get('success'):
+            if result.get('winner'):
+                flash(f'Auction executed successfully! Winner: {result.get("winning_user_name")} with bid of ${result.get("winning_amount"):,.2f}', 'success')
+            else:
+                flash('Auction executed but no winner was determined. Reserve price may not have been met.', 'warning')
+        else:
+            flash(f'Error executing auction: {result.get("message")}', 'error')
+    else:
+        flash('Auction not found.', 'error')
+
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+@app.route('/auction/<auction_id>/end')
+def end_auction(auction_id):
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('auctions'))
+    
+    if auction_id in auctions:
+        result = finalize_auction(auction_id)
+        if result['success']:
+            flash('Auction ended successfully!', 'success')
+        else:
+            flash(f"Failed to end auction: {result['message']}", 'error')
+    else:
+        flash('Auction not found.', 'error')
+    
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+@app.route('/auction/<auction_id>/cancel')
+def cancel_auction(auction_id):
+    user = get_user()
+    if not user or not user.get('is_admin', False):
+        flash('You do not have permission to perform this action.', 'error')
+        return redirect(url_for('auctions'))
+    
+    if auction_id in auctions:
+        auctions[auction_id]['status'] = 'cancelled'
+        storage.save_auctions(auctions)
+        flash('Auction cancelled successfully!', 'success')
+    else:
+        flash('Auction not found.', 'error')
+    
+    return redirect(url_for('auction_detail', auction_id=auction_id))
+
+@app.route('/process_auction_payment/<result_id>', methods=['GET', 'POST'])
+def process_auction_payment_route(result_id):
+    """Process payment for won auction - Now mainly for backward compatibility"""
+    user = get_user()
+    if not user:
+        flash('Please login first.', 'error')
+        return redirect(url_for('login'))
+
+    # Find the auction result
+    if result_id not in auction_results:
+        flash('Auction result not found.', 'error')
+        return redirect(url_for('auction_listings'))
+
+    result = auction_results[result_id]
+
+    # Check if user is the winner
+    if result['winning_user_id'] != user['id']:
+        flash('You are not authorized to make this payment.', 'error')
+        return redirect(url_for('auction_listings'))
+
+    # If payment is already completed, redirect back
+    if result['payment_status'] == 'completed':
+        flash('Payment has already been processed.', 'success')
+        return redirect(url_for('auction_detail', auction_id=result['auction_id']))
+
+    # Get the auction and winning amount
+    auction = auction_data.get(result['auction_id'], {})
+    winning_amount = float(result['winning_amount'])
+
+    if request.method == 'POST':
+        # Mark the payment as completed
+        result['payment_status'] = 'completed'
+        result['payment_transaction_id'] = f"MANUAL-{uuid.uuid4()}"
+        result['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Save the updated result
+        auction_results[result_id] = result
+        storage.save_auction_results(auction_results)
+
+        flash('Payment processed successfully!', 'success')
+        return redirect(url_for('auction_detail', auction_id=result['auction_id']))
+
+    # For GET requests, show the payment form
+    # Get the game and moment info for display
+    game = next((g for g in upcoming_games if g['id'] == auction.get('game_id')), None)
+    moment = moments.get(str(auction.get('moment_id')), {})
+    
+    return render_template('process_payment.html',
+                          user=user,
+                          result=result,
+                          auction=auction,
+                          game=game,
+                          moment=moment)
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html', user=get_user()), 404
@@ -1385,5 +2764,10 @@ if __name__ == '__main__':
     storage.save_data(moments, storage.MOMENTS_FILE)
     storage.save_data(upcoming_games, storage.GAMES_FILE)
     storage.save_data(sponsors, storage.SPONSORS_FILE)
+
+    # Add these new lines:
+    storage.save_auctions(auction_data)
+    storage.save_bids(bids)
+    storage.save_auction_results(auction_results)
 
     app.run(debug=True, host='0.0.0.0', port=5000)
