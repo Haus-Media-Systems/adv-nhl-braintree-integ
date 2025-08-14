@@ -122,21 +122,79 @@
                     <i class="fas fa-hockey-puck fa-4x text-primary"></i>
                 </div>
             {% endif %}
-            <div class="card-header">
+            
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ moment['name'] }}</h5>
+                
+                <!-- FIXED: Proper strategy counting -->
+                {% set moment_strategies = [] %}
+                {% for strat_id, strategy in user_strategies.items() %}
+                    {% if strategy.get('moment_id')|string == moment_id|string %}
+                        {% set _ = moment_strategies.append(strategy) %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if moment_strategies|length > 0 %}
+                    <span class="badge bg-success">{{ moment_strategies|length }} Strateg{{ 'ies' if moment_strategies|length > 1 else 'y' }}</span>
+                {% endif %}
             </div>
+            
             <div class="card-body">
                 <p><strong>Description:</strong> {{ moment['description'] }}</p>
                 <p><strong>Exposure:</strong> {{ moment['exposure'] }}</p>
                 <p><strong>Average Winning Bid:</strong> {{ moment['avg_bid'] }}</p>
                 <p><strong>Frequency:</strong> {{ moment['frequency'] }}</p>
+
+                {% if moment_strategies|length > 0 %}
+                    <div class="mt-3">
+                        <h6>Your Current Strategies:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for strategy in moment_strategies %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ strategy.get('name', moment['name'] + ' Strategy') }}</h6>
+                                            <p class="mb-1">
+                                                <small class="text-muted">
+                                                    Bid Range: ${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}
+                                                    {% if strategy.team_focus != 'both' %}
+                                                        | {{ strategy.team_focus.title() }} Team Only
+                                                    {% endif %}
+                                                    {% if strategy.player_focus %}
+                                                        | Players: {{ strategy.player_focus[:30] }}{{ '...' if strategy.player_focus|length > 30 else '' }}
+                                                    {% endif %}
+                                                </small>
+                                            </p>
+                                            {% if strategy.period_restrictions %}
+                                                <small class="badge bg-info">
+                                                    {% if strategy.period_restrictions == '1' %}1st Period
+                                                    {% elif strategy.period_restrictions == '2' %}2nd Period
+                                                    {% elif strategy.period_restrictions == '3' %}3rd Period
+                                                    {% elif strategy.period_restrictions == '1,2' %}1st & 2nd Periods
+                                                    {% elif strategy.period_restrictions == '2,3' %}2nd & 3rd Periods
+                                                    {% elif strategy.period_restrictions == 'OT' %}Overtime
+                                                    {% elif strategy.period_restrictions == 'SO' %}Shootout
+                                                    {% else %}{{ strategy.period_restrictions }}
+                                                    {% endif %}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-{{ 'success' if strategy.get('status', 'active') == 'active' else 'secondary' }}">
+                                            {{ strategy.get('status', 'active').title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
             </div>
+            
             <div class="card-footer d-grid">
-                <!-- DEBUG: moment_id = {{ moment_id }}, has_strategy = {{ moment_strategy_map[moment_id] }} -->
-                <!-- DEBUG: moment_strategy_map = {{ debug_data.moment_strategy_map }} -->
-                {% if moment_strategy_map[moment_id] %}
+                <!-- FIXED: Proper button display -->
+                {% if moment_strategies|length > 0 %}
                     <a href="{{ url_for('setup_strategy', moment_id=moment_id, game_id=game['id']) }}" class="btn btn-info">
-                        <i class="fas fa-edit me-1"></i> Edit Current Strategy
+                        <i class="fas fa-edit me-1"></i> Edit Current Strateg{{ 'ies' if moment_strategies|length > 1 else 'y' }}
                     </a>
                 {% else %}
                     <a href="{{ url_for('setup_strategy', moment_id=moment_id, game_id=game['id']) }}" class="btn btn-primary">
@@ -147,84 +205,6 @@
         </div>
     </div>
     {% endfor %}
-</div>
-
-<!-- Auctions for this Game -->
-<div class="row mb-4">
-    <div class="col-12">
-        <h2>Current Auctions</h2>
-        <p>These auctions are automatically processed based on your bidding strategies</p>
-    </div>
-</div>
-
-<div class="row">
-    {% set game_auctions = [] %}
-    {% for auction_id, auction in auctions.items() %}
-        {% if auction.game_id == game.id %}
-            {% set _ = game_auctions.append(auction) %}
-        {% endif %}
-    {% endfor %}
-
-    {% if game_auctions %}
-        {% for auction in game_auctions %}
-            <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        {% set moment = moments.get(auction.moment_id, {}) %}
-                        <h5 class="mb-0">{{ moment.get('name', 'Unknown Moment') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <!-- FIX: Replaced ternary operator with if-elif-else logic for determining badge color -->
-                                <p class="mb-0">Status: 
-                                    {% if auction.status == 'active' %}
-                                        <span class="badge bg-success">{{ auction.status|capitalize }}</span>
-                                    {% elif auction.status == 'pending' %}
-                                        <span class="badge bg-warning">{{ auction.status|capitalize }}</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ auction.status|capitalize }}</span>
-                                    {% endif %}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="mb-0">Current Bid: ${{ "{:,.2f}".format(auction.current_high_bid) }}</p>
-                            </div>
-                        </div>
-
-                        <p><strong>Auction Period:</strong><br>
-                           {{ auction.start_time }} - {{ auction.end_time }}</p>
-
-                        {% set user_has_strategy = false %}
-                        {% for strategy_id, strategy in strategies.items() %}
-                            {% if strategy.user_id == user.id and strategy.moment_id == auction.moment_id and strategy.game_id == game.id %}
-                                {% set user_has_strategy = true %}
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle me-2"></i> Your strategy is active for this auction
-                                    <p class="mb-0"><small>Bid range: ${{ "{:,.2f}".format(strategy.base_bid) }} - ${{ "{:,.2f}".format(strategy.max_bid) }}</small></p>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if not user_has_strategy %}
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-circle me-2"></i> You don't have a strategy for this moment
-                            </div>
-                            <a href="{{ url_for('setup_strategy', moment_id=auction.moment_id, game_id=game.id) }}" class="btn btn-primary">
-                                <i class="fas fa-plus-circle me-2"></i> Set Up Strategy
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i> No auctions have been created for this game yet.
-            </div>
-        </div>
-    {% endif %}
 </div>
 
 <div class="row mt-5">
@@ -275,6 +255,24 @@
     border-color: #17a2b8 !important;
     color: white !important;
     font-weight: 500 !important;
+}
+
+.btn-info:hover {
+    background-color: #138496 !important;
+    border-color: #117a8b !important;
+}
+
+.moment-card .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.moment-card .list-group-item:first-child {
+    border-top: none;
+}
+
+.moment-card .list-group-item:last-child {
+    border-bottom: none;
 }
 </style>
 {% endblock %}

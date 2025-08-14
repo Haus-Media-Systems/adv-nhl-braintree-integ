@@ -1,0 +1,697 @@
+{% extends 'base.html' %}
+
+{% block title %}User Strategies - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">User Strategies</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1>User Strategies</h1>
+                <p class="lead">Review and manage user bidding strategies and auction performance</p>
+            </div>
+            
+            <!-- User Selection Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if selected_user %}
+                        {{ selected_user.name }} ({{ selected_user.company }})
+                    {% else %}
+                        All Users
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li>
+                        <a class="dropdown-item {% if not selected_user_id %}active{% endif %}" 
+                           href="{{ url_for('admin_strategies') }}">
+                            All Users
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% for user_id, user_data in all_users.items() %}
+                        <li>
+                            <a class="dropdown-item {% if selected_user_id == user_id %}active{% endif %}" 
+                               href="{{ url_for('admin_strategies', user_id=user_id) }}">
+                                {{ user_data.name }} ({{ user_data.company }})
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics - Changes based on whether all users or a specific user is selected -->
+    <div class="row mb-4 g-4">
+        {% if selected_user %}
+            <!-- User-specific stats (like My Strategies) -->
+            {% set total_wins = user_auction_results|length %}
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5>Auction Wins</h5>
+                        <h2>{{ total_wins }}</h2>
+                        <p class="mb-0">Auctions Won</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5>Available Budget</h5>
+                        <h2>${{ "{:,.2f}".format(selected_user.available_budget) }}</h2>
+                        <p class="mb-0">For New Strategies</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5>Allocated to Strategies</h5>
+                        <h2>${{ "{:,.2f}".format(selected_user.allocated_budget) }}</h2>
+                        <p class="mb-0">Reserved Funds</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h5>Actually Spent</h5>
+                        <h2>${{ "{:,.2f}".format(selected_user.spent_budget) }}</h2>
+                        <p class="mb-0">On Winning Bids</p>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Platform-wide stats -->
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5>Total Auctions</h5>
+                        <h2>{{ platform_stats.total_auctions }}</h2>
+                        <p class="mb-0">Platform-wide</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5>User Available Budget</h5>
+                        <h2>${{ "{:,.2f}".format(platform_stats.total_user_budget) }}</h2>
+                        <p class="mb-0">Across All Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5>Allocated to Strategies</h5>
+                        <h2>${{ "{:,.2f}".format(platform_stats.total_allocated) }}</h2>
+                        <p class="mb-0">Platform-wide</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h5>Actually Spent</h5>
+                        <h2>${{ "{:,.2f}".format(platform_stats.total_spent) }}</h2>
+                        <p class="mb-0">On Winning Bids</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if selected_user %}
+        <!-- User-specific Budget Info -->
+        <div class="alert alert-info mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">{{ selected_user.name }} - Budget Overview</h5>
+                    <div class="progress mt-2" style="height: 15px;">
+                        {% set spent_percentage = (selected_user.spent_budget / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+                        {% set allocated_percentage = ((selected_user.allocated_budget - selected_user.spent_budget) / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+                        {% set available_percentage = (selected_user.available_budget / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+                    
+                        <div class="progress-bar bg-danger" style="width: {{ spent_percentage }}%" 
+                             data-bs-toggle="tooltip" data-bs-placement="top" 
+                             title="Spent: ${{ '{:,.2f}'.format(selected_user.spent_budget) }}">
+                            {% if spent_percentage >= 10 %}Spent{% endif %}
+                        </div>
+                        <div class="progress-bar bg-warning" style="width: {{ allocated_percentage }}%" 
+                             data-bs-toggle="tooltip" data-bs-placement="top" 
+                             title="Allocated: ${{ '{:,.2f}'.format(selected_user.allocated_budget - selected_user.spent_budget) }}">
+                            {% if allocated_percentage >= 10 %}Allocated{% endif %}
+                        </div>
+                        <div class="progress-bar bg-success" style="width: {{ available_percentage }}%" 
+                             data-bs-toggle="tooltip" data-bs-placement="top" 
+                             title="Available: ${{ '{:,.2f}'.format(selected_user.available_budget) }}">
+                            {% if available_percentage >= 10 %}Available{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <p class="mb-0">
+                        <strong>Total Budget:</strong> ${{ "{:,.2f}".format(selected_user.total_budget) }}<br>
+                        <strong>Available:</strong> ${{ "{:,.2f}".format(selected_user.available_budget) }}<br>
+                        <strong>Spent:</strong> ${{ "{:,.2f}".format(selected_user.spent_budget) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Active/All/Archive -->
+        <ul class="nav nav-tabs mb-4" id="strategiesTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active bg-primary text-white" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">
+                    <i class="fas fa-play-circle me-1"></i> Active Strategies
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link bg-secondary text-white" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                    <i class="fas fa-list me-1"></i> All Strategies
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link bg-success text-white" id="wins-tab" data-bs-toggle="tab" data-bs-target="#wins" type="button" role="tab" aria-controls="wins" aria-selected="false">
+                    <i class="fas fa-trophy me-1"></i> Auction Wins <span class="badge bg-light text-success">{{ user_auction_results|length }}</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="strategiesTabContent">
+            <!-- Active Strategies Tab -->
+            <div class="tab-pane fade show active p-4" id="active" role="tabpanel" aria-labelledby="active-tab">
+                {% set active_strategies = [] %}
+                {% for strat_id, strategy in user_strategies.items() %}
+                    {% if strategy.get('status') != 'inactive' %}
+                        {% set _ = active_strategies.append((strat_id, strategy)) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if active_strategies %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Game</th>
+                                    <th>Moment</th>
+                                    <th>Bid Range</th>
+                                    <th>Focus & Restrictions</th>
+                                    <th class="text-center">Wins</th>
+                                    <th class="text-end">Spent</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for strategy_id, strategy in active_strategies %}
+                                    <!-- Use pre-calculated wins and spent amounts from the route -->
+                                    {% set win_count = strategy.get('wins_count', 0) %}
+                                    {% set strategy_spent = strategy.get('spent_amount', 0) %}
+
+                                    <!-- Find the matching game -->
+                                    {% set game = strategy.get('game') %}
+
+                                    <tr>
+                                        <td>
+                                            {% if game %}
+                                                <div class="d-flex align-items-center">
+                                                    {% if game.get('status') == 'live' %}
+                                                        <span class="badge bg-success me-2">LIVE</span>
+                                                    {% endif %}
+                                                    <div>
+                                                        <strong>{{ game.away }} @ {{ game.home }}</strong><br>
+                                                        <small class="text-muted">{{ game.date }} | {{ game.get('time', '') }}</small>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">Game ID: {{ strategy.game_id }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set moment_name = 'Unknown' %}
+                                            {% if strategy.moment_id|string in moments %}
+                                                {% set moment_name = moments[strategy.moment_id|string].name %}
+                                            {% endif %}
+                                            <span class="badge bg-secondary p-2">{{ moment_name }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                                    <div class="progress-bar bg-primary" style="width: 100%"></div>
+                                                </div>
+                                                <span>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <!-- Team Focus -->
+                                            {% if strategy.team_focus == 'both' %}
+                                                <span class="badge bg-info">Both Teams</span>
+                                            {% elif strategy.team_focus == 'home' %}
+                                                <span class="badge bg-info">Home Team</span>
+                                            {% elif strategy.team_focus == 'away' %}
+                                                <span class="badge bg-info">Away Team</span>
+                                            {% endif %}
+
+                                            <!-- Player Focus -->
+                                            {% if strategy.player_focus %}
+                                                <br><small class="text-primary fw-bold">Players: {{ strategy.player_focus }}</small>
+                                            {% endif %}
+
+                                            <!-- Period Restrictions -->
+                                            {% if strategy.period_restrictions %}
+                                                <br>
+                                                <small class="fw-bold">
+                                                    Period(s):
+                                                    {% if strategy.period_restrictions == '1' %}1st Period Only
+                                                    {% elif strategy.period_restrictions == '2' %}2nd Period Only
+                                                    {% elif strategy.period_restrictions == '3' %}3rd Period Only
+                                                    {% elif strategy.period_restrictions == '1,2' %}1st and 2nd Periods
+                                                    {% elif strategy.period_restrictions == '2,3' %}2nd and 3rd Periods
+                                                    {% elif strategy.period_restrictions == 'OT' %}Overtime Only
+                                                    {% elif strategy.period_restrictions == 'SO' %}Shootout Only
+                                                    {% else %}{{ strategy.period_restrictions }}
+                                                    {% endif %}
+                                                </small>
+                                            {% endif %}
+
+                                            <!-- Specific Scenario for Overtime/Shootout -->
+                                            {% if strategy.specific_scenario %}
+                                                <br>
+                                                <small class="fw-bold">
+                                                    Scenario:
+                                                    {% if strategy.specific_scenario == 'both' %}Both OT & Shootout
+                                                    {% elif strategy.specific_scenario == 'OT' %}Overtime Goal Only
+                                                    {% elif strategy.specific_scenario == 'SO' %}Shootout Only
+                                                    {% else %}{{ strategy.specific_scenario }}
+                                                    {% endif %}
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if win_count > 0 %}
+                                                <span class="badge bg-success p-2">{{ win_count }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if strategy_spent > 0 %}
+                                                <span class="text-danger fw-bold">${{ "{:,.2f}".format(strategy_spent) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">$0.00</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#winsModal"
+                                                        data-strategy-id="{{ strategy_id }}"
+                                                        data-strategy-wins='{{ strategy.get("wins", [])|tojson }}'>
+                                                    <i class="fas fa-trophy"></i> Wins
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5>No Active Strategies</h5>
+                        <p class="text-muted">This user doesn't have any active bidding strategies.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- All Strategies Tab -->
+            <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+                {% if user_strategies %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Game</th>
+                                    <th>Moment</th>
+                                    <th>Bid Range</th>
+                                    <th>Focus</th>
+                                    <th>Status</th>
+                                    <th>Wins</th>
+                                    <th>Actual Spent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for strategy_id, strategy in user_strategies.items() %}
+                                    {% set strategy_wins = [] %}
+                                    {% set strategy_spent = 0 %}
+                                    {% for result in user_auction_results %}
+                                        {% if result.get('winning_strategy_id') and result.get('winning_strategy_id')|string == strategy_id|string %}
+                                            {% set _ = strategy_wins.append(result) %}
+                                            {% set strategy_spent = strategy_spent + result.winning_amount %}
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <tr class="{% if strategy.get('status') == 'inactive' %}table-light{% endif %}">
+                                        <td>
+                                            {% if strategy.get('game') %}
+                                                {% set game = strategy.get('game') %}
+                                                {{ game.away }} @ {{ game.home }}<br>
+                                                <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
+                                            {% else %}
+                                                Unknown Game
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if strategy.moment_id %}
+                                                {% if moments[strategy.moment_id|string] %}
+                                                    {{ moments[strategy.moment_id|string].name }}
+                                                {% else %}
+                                                    Unknown Moment
+                                                {% endif %}
+                                            {% else %}
+                                                Unknown Moment
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</td>
+                                        <td>
+                                            {% if strategy.team_focus == 'both' %}
+                                                Both Teams
+                                            {% elif strategy.team_focus == 'home' %}
+                                                Home Team
+                                            {% elif strategy.team_focus == 'away' %}
+                                                Away Team
+                                            {% endif %}
+                                            {% if strategy.player_focus %}
+                                                <br><small>{{ strategy.player_focus }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if strategy.get('status') == 'inactive' %}bg-secondary{% else %}bg-success{% endif %}">
+                                                {% if strategy.get('status') == 'inactive' %}Inactive{% else %}Active{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ strategy_wins|length }}</span>
+                                        </td>
+                                        <td>
+                                            {% if strategy_spent > 0 %}
+                                                <span class="text-danger fw-bold">${{ "{:,.2f}".format(strategy_spent) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">$0.00</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#winsModal"
+                                                        data-strategy-id="{{ strategy_id }}"
+                                                        data-strategy-wins='{{ strategy_wins|tojson }}'>
+                                                    View Wins
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 border rounded bg-light">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5>No Strategies</h5>
+                        <p class="text-muted">This user hasn't created any bidding strategies yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Wins Archive Tab -->
+            <div class="tab-pane fade" id="wins" role="tabpanel" aria-labelledby="wins-tab">
+                <!-- Date Filter -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <form class="d-flex gap-2" id="dateFilterForm">
+                            <input type="date" class="form-control" id="startDate" name="start_date">
+                            <input type="date" class="form-control" id="endDate" name="end_date">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <button type="button" class="btn btn-outline-secondary" id="clearFilter">Clear</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <p class="mb-0">
+                            <strong>Total Wins:</strong> {{ user_auction_results|length }} auctions won
+                        </p>
+                    </div>
+                </div>
+
+                {% if user_auction_results %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="winsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Game</th>
+                                    <th>Moment</th>
+                                    <th>Strategy</th>
+                                    <th>Winning Bid</th>
+                                    <th>Payment Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in user_auction_results|sort(attribute='created_at', reverse=True) %}
+                                    <tr data-date="{{ result.created_at }}">
+                                        <td>{{ result.created_at }}</td>
+                                        <td>
+                                            {% if result.get('game') %}
+                                                {% set game = result.get('game') %}
+                                                {{ game.away }} @ {{ game.home }}<br>
+                                                <small class="text-muted">{{ game.date }}</small>
+                                            {% elif result.get('game_info') %}
+                                                {{ result.get('game_info') }}
+                                            {% else %}
+                                                Unknown Game
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set auction = auctions.get(result.auction_id, {}) %}
+                                            {% set moment_id = auction.get('moment_id')|string %}
+                                            {% set moment = moments.get(moment_id) %}
+                                            <span class="badge bg-secondary">{{ moment.name if moment else 'Unknown Moment' }}</span>
+                                        </td>
+                                        <td>
+                                            {% if result.get('winning_strategy_id') %}
+                                                {% set strategy = strategies.get(result.winning_strategy_id, {}) %}
+                                                Strategy {{ result.winning_strategy_id[:8] }}...
+                                            {% else %}
+                                                <span class="text-muted">Unknown Strategy</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-danger fw-bold">${{ "{:,.2f}".format(result.winning_amount) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">Completed</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('auction_detail', auction_id=result.auction_id) }}" class="btn btn-sm btn-outline-primary">
+                                                View Auction
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 border rounded bg-light">
+                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                        <h5>No Wins Yet</h5>
+                        <p class="text-muted">This user hasn't won any auctions yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <!-- No User Selected - Show Platform Overview -->
+        <div class="alert alert-info py-5 text-center">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <h4>Platform Overview</h4>
+            <p>Select a specific user from the dropdown above to view their strategies and auction performance.</p>
+            
+            <div class="mt-4">
+                <h5>Platform Statistics</h5>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h6>Total Users</h6>
+                            <p class="fs-4 mb-0">{{ all_users|length }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h6>Total Strategies</h6>
+                            <p class="fs-4 mb-0">{{ strategies|length }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h6>Active Strategies</h6>
+                            <p class="fs-4 mb-0">{{ platform_stats.active_strategies }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h6>Completed Auctions</h6>
+                            <p class="fs-4 mb-0">{{ platform_stats.completed_auctions }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Strategy Wins Modal -->
+<div class="modal fade" id="winsModal" tabindex="-1" aria-labelledby="winsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="winsModalLabel">Strategy Wins</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="winsModalBody">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle wins modal
+    const winsModal = document.getElementById('winsModal');
+    winsModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const strategyId = button.getAttribute('data-strategy-id');
+        const strategyWins = JSON.parse(button.getAttribute('data-strategy-wins'));
+
+        const modalBody = document.getElementById('winsModalBody');
+
+        if (strategyWins.length === 0) {
+            modalBody.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                    <p>This strategy hasn't won any auctions yet.</p>
+                </div>
+            `;
+        } else {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Game</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            strategyWins.forEach(win => {
+                html += `
+                    <tr>
+                        <td>${win.created_at}</td>
+                        <td>${win.game_info || 'Unknown Game'}</td>
+                        <td class="text-danger fw-bold">$${win.winning_amount.toFixed(2)}</td>
+                        <td>
+                            <span class="badge bg-success">
+                                Completed
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/auction/${win.auction_id}" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            modalBody.innerHTML = html;
+        }
+    });
+
+    // Handle date filtering
+    const dateFilterForm = document.getElementById('dateFilterForm');
+    const clearFilterBtn = document.getElementById('clearFilter');
+    const winsTable = document.getElementById('winsTable');
+
+    if (dateFilterForm && winsTable) {
+        dateFilterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const rows = winsTable.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const rowDate = row.getAttribute('data-date');
+                const rowDateObj = new Date(rowDate);
+
+                let show = true;
+
+                if (startDate && new Date(startDate) > rowDateObj) {
+                    show = false;
+                }
+
+                if (endDate && new Date(endDate) < rowDateObj) {
+                    show = false;
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+        });
+
+        clearFilterBtn.addEventListener('click', function() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+
+            const rows = winsTable.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+        });
+    }
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+{% endblock %}

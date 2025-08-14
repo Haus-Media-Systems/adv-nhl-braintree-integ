@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Payment Distributions</h1>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Processed</h5>
+                            <h3>${{ '%.2f'|format(total_processed) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Broadcaster Revenue</h5>
+                            <h3>${{ '%.2f'|format(broadcaster_revenue) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Commission</h5>
+                            <h3>${{ '%.2f'|format(commission_revenue) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-secondary">
+                        <div class="card-body">
+                            <h5 class="card-title">Platform</h5>
+                            <h3>${{ '%.2f'|format(platform_revenue) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add the Process All Pending Payments button here -->
+    <div class="mb-4 d-flex justify-content-between">
+        <div>
+            <a href="{{ url_for('admin_process_all_pending_payments') }}" class="btn btn-primary">
+                <i class="fas fa-money-bill-wave me-2"></i>Process All Pending Payments
+            </a>
+        </div>
+        <div>
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#forceCompleteModal">
+                <i class="fas fa-hammer me-2"></i>Force Complete All Pending Payments
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5>Recent Payments</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Auction</th>
+                        <th>Winner</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Splits</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in auction_results %}
+                    <tr>
+                        <td>{{ result.created_at }}</td>
+                        <td>
+                            {{ result.auction_name }}
+                            <br>
+                            <small class="text-muted">{{ result.game_info }}</small>
+                        </td>
+                        <td>{{ result.winner_name }} ({{ result.winner_company }})</td>
+                        <td>${{ '%.2f'|format(result.winning_amount) }}</td>
+                        <td>
+                            {% if result.payment_distribution_complete %}
+                                <span class="badge bg-success">Completed</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                Broadcaster: ${{ '%.2f'|format(result.broadcaster_share) }}<br>
+                                Commission: ${{ '%.2f'|format(result.commission_amount) }}<br>
+                                Platform: ${{ '%.2f'|format(result.platform_share) }}
+                            </small>
+                        </td>
+                        <td>
+                            {% if not result.payment_distribution_complete %}
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_process_payment', result_id=result.id) }}" class="btn btn-sm btn-primary">Process</a>
+                                    <a href="{{ url_for('admin_force_complete_payment', result_id=result.id) }}" class="btn btn-sm btn-warning">Force</a>
+                                </div>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary" disabled>Processed</button>
+                            {% endif %}
+
+                            {% if result.payment_transaction_id %}
+                                <a href="#" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Transaction IDs:
+                                Main: {{ result.payment_transaction_id }}
+                                {% if result.broadcaster_transaction_id %}Broadcaster: {{ result.broadcaster_transaction_id }}{% endif %}
+                                {% if result.commission_transaction_id %}Commission: {{ result.commission_transaction_id }}{% endif %}
+                                {% if result.platform_transaction_id %}Platform: {{ result.platform_transaction_id }}{% endif %}
+                                ">View IDs</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Force Complete Modal -->
+<div class="modal fade" id="forceCompleteModal" tabindex="-1" aria-labelledby="forceCompleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="forceCompleteModalLabel">Force Complete All Pending Payments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-danger">
+                    <strong>Warning:</strong> This will mark all pending payments as completed without actually processing them through Braintree. 
+                    This should only be used for test payments or when normal processing has consistently failed.
+                </p>
+                
+                <p>Are you sure you want to force complete all pending payments?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{{ url_for('admin_force_complete_all_payments') }}" class="btn btn-warning">Force Complete All</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

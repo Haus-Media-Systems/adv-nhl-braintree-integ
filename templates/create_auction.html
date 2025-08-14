@@ -59,7 +59,7 @@
                         </div>
 
                         <hr class="my-4">
-                        
+
                         <div class="mb-4">
                             <h5>Specific Event Details</h5>
                             <div class="row">
@@ -84,7 +84,7 @@
                                     <div class="form-text">How significant is this event in the context of the game</div>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="team_id" class="form-label">Team</label>
@@ -129,16 +129,6 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="execute_immediately" name="execute_immediately" checked>
-                                <label class="form-check-label" for="execute_immediately">
-                                    <strong>Execute Auction Immediately</strong>
-                                </label>
-                                <div class="form-text">If checked, the auction will be processed instantly when submitted</div>
-                            </div>
-                        </div>
-
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-bolt me-2"></i> Trigger Instant Auction
@@ -168,7 +158,7 @@
                     <div class="alert alert-warning">
                         <i class="fas fa-bolt me-2"></i> <strong>Instant Auction:</strong> Results are determined in milliseconds with no manual intervention.
                     </div>
-                    
+
                     <h5 class="mt-4">Event Importance</h5>
                     <p>Event importance affects visibility and audience engagement:</p>
                     <ul>
@@ -176,13 +166,13 @@
                         <li><strong>High:</strong> Significant moment</li>
                         <li><strong>Critical:</strong> Game-changing moment</li>
                     </ul>
-                    
+
                     <div class="alert alert-info mt-4">
                         <i class="fas fa-info-circle me-2"></i> In production, most auctions will be triggered automatically by the AI system monitoring games.
                     </div>
                 </div>
             </div>
-            
+
             <div class="card">
                 <div class="card-header bg-dark text-white">
                     <h4 class="mb-0">Active Bidding Strategies</h4>
@@ -225,7 +215,7 @@
                 width: '100%'
             });
         });
-        
+
         // Sample player data (would be replaced with API calls in production)
         const teamPlayers = {
             "NYR": [
@@ -303,88 +293,88 @@
         const playersSelect = document.getElementById('players');
         const momentSelect = document.getElementById('moment_id');
         const activeStrategiesDiv = document.getElementById('activeStrategies');
-        
+
         if (gameSelect && teamSelect) {
             gameSelect.addEventListener('change', function() {
                 const gameId = this.value;
                 teamSelect.innerHTML = '<option value="" selected disabled>Select team...</option>';
-                
+
                 // Clear and reset players dropdown
                 $('#players').empty().trigger('change');
-                
+
                 if (gameId && gameTeams[gameId]) {
                     const game = gameTeams[gameId];
-                    
+
                     // Add "Both Teams" option
                     const bothOption = document.createElement('option');
                     bothOption.value = "both";
                     bothOption.textContent = "Both Teams";
                     teamSelect.appendChild(bothOption);
-                    
+
                     // Add home team
                     const homeOption = document.createElement('option');
                     homeOption.value = game.homeCode;
                     homeOption.textContent = game.home + " (Home)";
                     homeOption.setAttribute('data-team-name', game.home);
                     teamSelect.appendChild(homeOption);
-                    
+
                     // Add away team
                     const awayOption = document.createElement('option');
                     awayOption.value = game.awayCode;
                     awayOption.textContent = game.away + " (Away)";
                     awayOption.setAttribute('data-team-name', game.away);
                     teamSelect.appendChild(awayOption);
-                    
+
                     // Load all players from both teams
                     updatePlayersList(game.homeCode, game.awayCode);
-                    
+
                     updateActiveStrategies();
                 }
             });
         }
-        
+
         // Update players list based on selected teams
         function updatePlayersList(homeTeamCode, awayTeamCode) {
             // Clear previous options
             $('#players').empty();
-            
+
             // Add home team players
             if (homeTeamCode && teamPlayers[homeTeamCode]) {
                 const homeOptgroup = new Option(gameTeams[gameSelect.value].home + " Players", "");
                 homeOptgroup.disabled = true;
                 $('#players').append(homeOptgroup);
-                
+
                 teamPlayers[homeTeamCode].forEach(player => {
                     const newOption = new Option(player.name + " (" + player.position + ")", player.id);
                     $('#players').append(newOption);
                 });
             }
-            
+
             // Add away team players
             if (awayTeamCode && teamPlayers[awayTeamCode]) {
                 const awayOptgroup = new Option(gameTeams[gameSelect.value].away + " Players", "");
                 awayOptgroup.disabled = true;
                 $('#players').append(awayOptgroup);
-                
+
                 teamPlayers[awayTeamCode].forEach(player => {
                     const newOption = new Option(player.name + " (" + player.position + ")", player.id);
                     $('#players').append(newOption);
                 });
             }
-            
+
             // Refresh Select2
             $('#players').trigger('change');
         }
-        
+
         // Update player options when team changes
         if (teamSelect && playersSelect) {
             teamSelect.addEventListener('change', function() {
                 const teamValue = this.value;
                 const gameId = gameSelect.value;
-                
+
                 if (gameId && gameTeams[gameId]) {
                     const game = gameTeams[gameId];
-                    
+
                     if (teamValue === "both") {
                         // Show all players from both teams
                         updatePlayersList(game.homeCode, game.awayCode);
@@ -396,23 +386,23 @@
                         updatePlayersList(null, game.awayCode);
                     }
                 }
-                
+
                 updateActiveStrategies();
             });
         }
-        
+
         // Update active strategies when moment changes
         if (momentSelect) {
             momentSelect.addEventListener('change', function() {
                 updateActiveStrategies();
             });
         }
-        
+
         // Function to update active strategies section
         function updateActiveStrategies() {
             const gameId = gameSelect.value;
             const momentId = momentSelect.value;
-            
+
             if (!gameId || !momentId) {
                 activeStrategiesDiv.innerHTML = `
                     <div class="placeholder-glow">
@@ -424,10 +414,10 @@
                 `;
                 return;
             }
-            
+
             // In production, this would fetch actual strategies from the server
             // For now, we'll simulate with placeholder data
-            
+
             // Simulate API call delay
             activeStrategiesDiv.innerHTML = `
                 <div class="d-flex justify-content-center">
@@ -436,7 +426,7 @@
                     </div>
                 </div>
             `;
-            
+
             setTimeout(() => {
                 // Sample data - would come from API in production
                 const sampleStrategies = [
@@ -444,7 +434,7 @@
                     { id: 2, user: "Car Manufacturer", min: 4500, max: 7000 },
                     { id: 3, user: "Insurance Company", min: 2500, max: 6000 }
                 ];
-                
+
                 if (sampleStrategies.length > 0) {
                     let html = '<ul class="list-group">';
                     sampleStrategies.forEach(strat => {

@@ -8,13 +8,14 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-<li class="breadcrumb-item">
-    {% if moment and 'id' in moment %}
-        <a href="{{ url_for('moment_detail', moment_id=moment['id']) }}">{{ moment['name'] }}</a>
-    {% else %}
-        <span>{{ moment.get('name', 'Unknown Moment') }}</span>
-    {% endif %}
-</li>                <li class="breadcrumb-item active" aria-current="page">Set Up Strategy</li>
+                <li class="breadcrumb-item">
+                    {% if moment and 'id' in moment %}
+                        <a href="{{ url_for('moment_detail', moment_id=moment['id']) }}">{{ moment['name'] }}</a>
+                    {% else %}
+                        <span>{{ moment.get('name', 'Unknown Moment') }}</span>
+                    {% endif %}
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Set Up Strategy</li>
             </ol>
         </nav>
     </div>
@@ -22,7 +23,7 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <h1>{% if existing_strategy %}Edit{% else %}Create{% endif %} Automated Bidding Strategy</h1>
+        <h1>{% if existing_strategies %}Edit{% else %}Create{% endif %} Automated Bidding Strategies</h1>
         <p class="lead">Configure how your brand will bid on {{ moment['name'] }} moments during NHL games</p>
     </div>
 </div>
@@ -30,11 +31,18 @@
 <div class="row">
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Strategy Configuration</h4>
+                <div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="addStrategyBtn" title="Add Strategy">
+                        <i class="fas fa-plus me-1"></i> Add Strategy
+                    </button>
+                </div>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('setup_strategy', moment_id=moment['id']) }}">
+                <form method="POST" action="{{ url_for('setup_strategy', moment_id=moment['id']) }}" id="multiStrategyForm">
+
+                    <!-- Selected Moment Display -->
                     <div class="mb-4">
                         <h5>Selected Moment</h5>
                         <div class="d-flex align-items-center p-3 bg-light rounded">
@@ -49,6 +57,7 @@
                         </div>
                     </div>
 
+                    <!-- Game Selection -->
                     <div class="mb-4">
                         <h5>Select Game</h5>
                         <select class="form-select" name="game_id" id="game_id" required>
@@ -64,157 +73,42 @@
 
                     <hr class="my-4">
 
+                    <!-- Strategy Tabs -->
                     <div class="mb-4">
-                        <h5>Bidding Parameters</h5>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="base_bid" class="form-label">Base Bid Amount ($)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="base_bid" name="base_bid" min="1000" step="100" 
-                                           value="{{ existing_strategy.base_bid if existing_strategy else 3000 }}" required>
-                                </div>
-                                <div class="form-text">Your starting bid for each {{ moment['name'] }} moment</div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="bid_increment" class="form-label">Bid Increment ($)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="bid_increment" name="bid_increment" min="100" step="100" 
-                                           value="{{ existing_strategy.bid_increment if existing_strategy else 500 }}" required>
-                                </div>
-                                <div class="form-text">Amount to increase bid during competitive auctions</div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="max_bid" class="form-label">Maximum Bid Amount ($)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="max_bid" name="max_bid" min="1000" step="100" 
-                                           value="{{ existing_strategy.max_bid if existing_strategy else 7000 }}" required>
-                                </div>
-                                <div class="form-text">Your system will never bid above this amount</div>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Bidding Strategies</h5>
+                            <small class="text-muted">Create multiple strategies for different scenarios</small>
+                        </div>
+
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs" id="strategyTabs" role="tablist">
+                            <!-- Tabs will be populated by JavaScript -->
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content border border-top-0 p-3" id="strategyTabContent">
+                            <!-- Tab panes will be populated by JavaScript -->
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <h5>Strategic Focus</h5>
-                        <div class="mb-3">
-                            <label for="team_focus" class="form-label">Team Focus</label>
-                            <select class="form-select" id="team_focus" name="team_focus" required>
-                                <option value="both" {% if existing_strategy and existing_strategy.team_focus == 'both' %}selected{% endif %}>Both Teams</option>
-                                <option value="home" {% if existing_strategy and existing_strategy.team_focus == 'home' %}selected{% endif %}>Home Team Only</option>
-                                <option value="away" {% if existing_strategy and existing_strategy.team_focus == 'away' %}selected{% endif %}>Away Team Only</option>
-                            </select>
-                            <div class="form-text">Select which team's {{ moment['name'] }} moments you want to bid on</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="player_focus" class="form-label">Player Focus (Optional)</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="player_focus" name="player_focus" 
-                                       placeholder="e.g., Connor McDavid, Sidney Crosby"
-                                       value="{{ existing_strategy.player_focus if existing_strategy else '' }}">
-                                <button type="button" class="btn btn-outline-primary" id="browsePlayersBtn">
-                                    <i class="fas fa-users me-1"></i> Browse Players
-                                </button>
-                            </div>
-                            <div class="form-text" id="player-focus-help">Please select a game first to browse players from those teams</div>
-                        </div>
-
-                        <!-- Direct script for handling the Browse Players button -->
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const browseBtn = document.getElementById('browsePlayersBtn');
-                            const gameSelect = document.getElementById('game_id');
-                            const playerModal = new bootstrap.Modal(document.getElementById('playerSelectionModal'));
-
-                            // Set initial state
-                            browseBtn.disabled = !gameSelect.value;
-
-                            // Update button state when game changes
-                            gameSelect.addEventListener('change', function() {
-                                browseBtn.disabled = !this.value;
-                            });
-
-                            // Show modal when button clicked
-                            browseBtn.addEventListener('click', function() {
-                                if (gameSelect.value) {
-                                    playerModal.show();
-                                } else {
-                                    alert('Please select a game first');
-                                }
-                            });
-                        });
-                        </script>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5>Time and Period Restrictions</h5>
-                        <div class="mb-3">
-                            <label for="period_restrictions" class="form-label">Period Restrictions</label>
-                            <select class="form-select" id="period_restrictions" name="period_restrictions">
-                                <option value="" {% if not existing_strategy or not existing_strategy.period_restrictions %}selected{% endif %}>All Periods</option>
-                                <option value="1" {% if existing_strategy and existing_strategy.period_restrictions == '1' %}selected{% endif %}>1st Period Only</option>
-                                <option value="2" {% if existing_strategy and existing_strategy.period_restrictions == '2' %}selected{% endif %}>2nd Period Only</option>
-                                <option value="3" {% if existing_strategy and existing_strategy.period_restrictions == '3' %}selected{% endif %}>3rd Period Only</option>
-                                <option value="1,2" {% if existing_strategy and existing_strategy.period_restrictions == '1,2' %}selected{% endif %}>1st and 2nd Periods</option>
-                                <option value="2,3" {% if existing_strategy and existing_strategy.period_restrictions == '2,3' %}selected{% endif %}>2nd and 3rd Periods</option>
-                                <option value="OT" {% if existing_strategy and existing_strategy.period_restrictions == 'OT' %}selected{% endif %}>Overtime Only</option>
-                                <option value="SO" {% if existing_strategy and existing_strategy.period_restrictions == 'SO' %}selected{% endif %}>Shootout Only</option>
-                            </select>
-                            <div class="form-text">Restrict your bidding to specific periods</div>
-                        </div>
-
-                        {% if moment['name'] == 'Overtime Goal/Shootout' %}
-                        <div class="mb-3">
-                            <label for="specific_scenario" class="form-label">Specific Scenario</label>
-                            <select class="form-select" id="specific_scenario" name="specific_scenario">
-                                <option value="both" {% if existing_strategy and existing_strategy.specific_scenario == 'both' %}selected{% endif %}>Both Overtime & Shootout</option>
-                                <option value="OT" {% if existing_strategy and existing_strategy.specific_scenario == 'OT' %}selected{% endif %}>Overtime Goal Only</option>
-                                <option value="SO" {% if existing_strategy and existing_strategy.specific_scenario == 'SO' %}selected{% endif %}>Shootout Only</option>
-                            </select>
-                            <div class="form-text">For overtime/shootout goals, specify which scenario you want to bid on</div>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-4">
-                        <h5>Ad Content</h5>
-                        <div class="mb-3">
-                            <label for="ad_content" class="form-label">Ad Content URL</label>
-                            <input type="text" class="form-control" id="ad_content" name="ad_content" 
-                                   placeholder="https://yourdomain.com/ads/nhl-ad.mp4" 
-                                   value="{{ existing_strategy.ad_content if existing_strategy else 'https://example.com/test-ad.mp4' }}">
-                            <div class="form-text">URL to your ad content that will appear in the instant replay overlay (placeholder URL is provided for testing)</div>
-                        </div>
-                    </div>
-
+                    <!-- Form Actions -->
                     <div class="d-grid gap-2">
-    <button type="submit" class="btn btn-primary btn-lg">
-        <i class="fas fa-check-circle me-2"></i>
-        {% if existing_strategy %}
-            Update Bidding Strategy for {{ moment['name'] }}
-        {% else %}
-            Create Bidding Strategy for {{ moment['name'] }}
-        {% endif %}
-    </button>
-    
-    <!-- Cancel button redirects to game details page of the selected game -->
-    {% if selected_game_id %}
-    <a href="{{ url_for('game_detail', game_id=selected_game_id) }}" class="btn btn-outline-secondary">Cancel</a>
-{% else %}
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
-{% endif %}
-    <!-- Add Remove Bidding Strategy button, only show if there's an existing strategy -->
-    {% if existing_strategy %}
-    <a href="{{ url_for('delete_strategy', strategy_id=existing_strategy.id) }}"
-   class="btn btn-danger"
-   onclick="return confirm('Are you sure you want to delete this bidding strategy?');">
-    <i class="fas fa-trash-alt me-2"></i> Remove Bidding Strategy
-</a>
-    {% endif %}
-</div>
+                        <!-- FIXED: Button with correct styling and text -->
+                        <button type="submit" class="btn btn-{{ 'info' if existing_strategies else 'primary' }} btn-lg" id="saveAllBtn">
+                            <i class="fas fa-check-circle me-2"></i>
+                            {% if existing_strategies %}Edit/Update Strategies for {{ moment['name'] }}{% else %}Save All Strategies for {{ moment['name'] }}{% endif %}
+                        </button>
+
+                        <!-- Cancel button -->
+                        {% if selected_game_id %}
+                        <a href="{{ url_for('game_detail', game_id=selected_game_id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        {% else %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        {% endif %}
+
+                        <!-- Delete buttons for strategies (populated by JS) -->
+                        <div id="deleteButtonsContainer"></div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -239,49 +133,24 @@
                             Not selected
                         {% endif %}
                     </span></p>
-                    <p><strong>Base Bid:</strong> $<span id="summary-base-bid">{{ "{:,}".format(existing_strategy.base_bid|int) if existing_strategy else "3,000" }}</span></p>
-                    <p><strong>Bid Increment:</strong> $<span id="summary-bid-increment">{{ "{:,}".format(existing_strategy.bid_increment|int) if existing_strategy else "500" }}</span></p>
-                    <p><strong>Max Bid:</strong> $<span id="summary-max-bid">{{ "{:,}".format(existing_strategy.max_bid|int) if existing_strategy else "7,000" }}</span></p>
-                    <p><strong>Team Focus:</strong> <span id="summary-team">
-                        {% if existing_strategy and existing_strategy.team_focus %}
-                            {% if existing_strategy.team_focus == 'both' %}Both Teams
-                            {% elif existing_strategy.team_focus == 'home' %}Home Team Only
-                            {% elif existing_strategy.team_focus == 'away' %}Away Team Only
-                            {% else %}{{ existing_strategy.team_focus }}
-                            {% endif %}
-                        {% else %}
-                            Both Teams
-                        {% endif %}
-                    </span></p>
-                    <p><strong>Player Focus:</strong> <span id="summary-player">{{ existing_strategy.player_focus if existing_strategy and existing_strategy.player_focus else "All Players" }}</span></p>
-                    <p><strong>Periods:</strong> <span id="summary-periods">
-                        {% if existing_strategy and existing_strategy.period_restrictions %}
-                            {% if existing_strategy.period_restrictions == '1' %}1st Period Only
-                            {% elif existing_strategy.period_restrictions == '2' %}2nd Period Only
-                            {% elif existing_strategy.period_restrictions == '3' %}3rd Period Only
-                            {% elif existing_strategy.period_restrictions == '1,2' %}1st and 2nd Periods
-                            {% elif existing_strategy.period_restrictions == '2,3' %}2nd and 3rd Periods
-                            {% elif existing_strategy.period_restrictions == 'OT' %}Overtime Only
-                            {% elif existing_strategy.period_restrictions == 'SO' %}Shootout Only
-                            {% else %}{{ existing_strategy.period_restrictions }}
-                            {% endif %}
-                        {% else %}
-                            All Periods
-                        {% endif %}
-                    </span></p>
+
+                    <div id="strategySummaryList">
+                        <!-- Strategy summaries will be populated by JavaScript -->
+                    </div>
                 </div>
 
                 <hr>
 
                 <div class="mb-3">
                     <h6>Estimated Stats</h6>
+                    <p><strong>Total Strategies:</strong> <span id="total-strategies">1</span></p>
+                    <p><strong>Combined Max Bid:</strong> $<span id="combined-max-bid">7,000</span></p>
                     <p><strong>Est. Win Rate:</strong> <span id="est-win-rate">62%</span></p>
-                    <p><strong>Est. Cost:</strong> $<span id="est-cost">15,000 - 25,000</span></p>
                     <p><strong>Est. Impressions:</strong> <span id="est-impressions">500,000+</span></p>
                 </div>
 
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i> Your strategy will automatically bid in real-time when conditions are met during the game.
+                    <i class="fas fa-info-circle me-2"></i> Your strategies will automatically bid in real-time when conditions are met during the game.
                 </div>
             </div>
             <div class="card-footer">
@@ -444,45 +313,574 @@
         "Calgary Flames": "CGY"
     };
 
-    // Simple script to update the strategy summary in real-time
+    // Strategy management
+    let strategies = [];
+    let strategyCounter = 1;
+    let activeStrategyIndex = 0;
+    let selectedHomeTeam = "";
+    let selectedAwayTeam = "";
+    let currentPlayerModalStrategyIndex = 0;
+
+    // Initialize existing strategies from backend
+    const existingStrategies = {{ existing_strategies|tojson|safe if existing_strategies else '[]' }};
+    const momentName = "{{ moment['name'] }}";
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Game selection and player browsing
-        const gameSelect = document.getElementById('game_id');
-        const summaryGame = document.getElementById('summary-game');
-        const playerFocusHelp = document.getElementById('player-focus-help');
-        const teamFilter = document.getElementById('teamFilter');
-        const playersTable = document.getElementById('playersTable').querySelector('tbody');
+        initializeStrategies();
+        setupEventListeners();
+        updateGameInfo();
+    });
 
-        let selectedHomeTeam = "";
-        let selectedAwayTeam = "";
-
-        // The direct button handling was moved to an inline script above
-        // to ensure it loads before the modal is referenced
-
-        if (gameSelect) {
-            // Check if a game is already selected on page load
-            if (gameSelect.value) {
-                const selectedOption = gameSelect.options[gameSelect.selectedIndex];
-                selectedHomeTeam = selectedOption.getAttribute('data-home');
-                selectedAwayTeam = selectedOption.getAttribute('data-away');
-                summaryGame.textContent = selectedOption.text || 'Not selected';
-            }
-
-            gameSelect.addEventListener('change', function() {
-                console.log("Game selected: " + this.value); // Debug log
-                const selectedOption = this.options[this.selectedIndex];
-                summaryGame.textContent = selectedOption.text || 'Not selected';
-
-                // Store the home and away teams for filtering
-                selectedHomeTeam = selectedOption.getAttribute('data-home');
-                selectedAwayTeam = selectedOption.getAttribute('data-away');
-
-                // Update the player table when game changes
-                updatePlayerTable();
-            });
+    function initializeStrategies() {
+        // Update the submit button based on whether we have existing strategies
+        const submitBtn = document.getElementById('saveAllBtn');
+        
+        if (existingStrategies && existingStrategies.length > 0) {
+            // We have existing strategies - show Edit/Update button
+            submitBtn.className = 'btn btn-info btn-lg';
+            submitBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Edit/Update Strategies for ' + momentName;
+            
+            // Load existing strategies
+            strategies = existingStrategies.map((strategy, index) => ({
+                id: strategy.id || null,
+                name: strategy.name || `${momentName} Strategy ${index + 1}`,
+                base_bid: strategy.base_bid || 3000,
+                bid_increment: strategy.bid_increment || 500,
+                max_bid: strategy.max_bid || 7000,
+                team_focus: strategy.team_focus || 'both',
+                player_focus: strategy.player_focus || '',
+                period_restrictions: strategy.period_restrictions || '',
+                ad_content: strategy.ad_content || 'https://example.com/test-ad.mp4',
+                specific_scenario: strategy.specific_scenario || 'both'
+            }));
+            strategyCounter = strategies.length + 1;
+        } else {
+            // No existing strategies - show Save All button
+            submitBtn.className = 'btn btn-primary btn-lg';
+            submitBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Save All Strategies for ' + momentName;
+            
+            // Create first default strategy
+            strategies = [{
+                id: null,
+                name: `${momentName} Strategy`,
+                base_bid: 3000,
+                bid_increment: 500,
+                max_bid: 7000,
+                team_focus: 'both',
+                player_focus: '',
+                period_restrictions: '',
+                ad_content: 'https://example.com/test-ad.mp4',
+                specific_scenario: 'both'
+            }];
+            strategyCounter = 2;
         }
 
+        renderStrategyTabs();
+        renderActiveStrategyForm();
+        updateSummary();
+    }
+
+    function setupEventListeners() {
+        // Add strategy button
+        document.getElementById('addStrategyBtn').addEventListener('click', addStrategy);
+
+        // Game selection
+        const gameSelect = document.getElementById('game_id');
+        if (gameSelect) {
+            gameSelect.addEventListener('change', updateGameInfo);
+            if (gameSelect.value) {
+                updateGameInfo();
+            }
+        }
+
+        // Form submission
+        document.getElementById('multiStrategyForm').addEventListener('submit', handleFormSubmission);
+
+        // Player modal events
+        setupPlayerModalEvents();
+    }
+
+    function addStrategy() {
+        if (strategies.length >= 10) {
+            alert('Maximum of 10 strategies allowed per moment type.');
+            return;
+        }
+
+        const newStrategy = {
+            id: null,
+            name: `${momentName} Strategy ${strategyCounter}`,
+            base_bid: 3000,
+            bid_increment: 500,
+            max_bid: 7000,
+            team_focus: 'both',
+            player_focus: '',
+            period_restrictions: '',
+            ad_content: 'https://example.com/test-ad.mp4',
+            specific_scenario: 'both'
+        };
+
+        strategies.push(newStrategy);
+        strategyCounter++;
+        activeStrategyIndex = strategies.length - 1;
+
+        renderStrategyTabs();
+        renderActiveStrategyForm();
+        updateSummary();
+        updateDeleteButtons();
+    }
+
+function removeStrategy(index) {
+    if (confirm(`Are you sure you want to delete "${strategies[index].name}"?`)) {
+        strategies.splice(index, 1);
+
+        // If no strategies left, we need to delete all strategies for this moment from the backend
+        if (strategies.length === 0) {
+            // Get the game_id and moment_id
+            const gameSelect = document.getElementById('game_id');
+            const gameId = gameSelect ? gameSelect.value : null;
+            const momentId = "{{ moment['id'] }}";
+            
+            // Create a form to submit the deletion request
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/delete_all_strategies/${momentId}/${gameId}`;
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+
+        // Rest of the function remains the same...
+        if (activeStrategyIndex >= strategies.length) {
+            activeStrategyIndex = strategies.length - 1;
+        }
+
+        renderStrategyTabs();
+        renderActiveStrategyForm();
+        updateSummary();
+        updateDeleteButtons();
+    }
+}
+
+    function renderStrategyTabs() {
+        const tabsContainer = document.getElementById('strategyTabs');
+        tabsContainer.innerHTML = '';
+
+        strategies.forEach((strategy, index) => {
+            const tabId = `strategy-tab-${index}`;
+            const paneId = `strategy-pane-${index}`;
+
+            const li = document.createElement('li');
+            li.className = 'nav-item';
+            li.setAttribute('role', 'presentation');
+
+            const button = document.createElement('button');
+            // Updated styling: dark blue for active, light blue for inactive
+            if (index === activeStrategyIndex) {
+                button.className = 'nav-link active bg-primary text-white border-primary';
+            } else {
+                button.className = 'nav-link bg-info text-white border-info';
+            }
+
+            button.id = tabId;
+            button.setAttribute('data-bs-toggle', 'tab');
+            button.setAttribute('data-bs-target', `#${paneId}`);
+            button.setAttribute('type', 'button');
+            button.setAttribute('role', 'tab');
+            button.setAttribute('aria-controls', paneId);
+            button.setAttribute('aria-selected', index === activeStrategyIndex ? 'true' : 'false');
+            button.setAttribute('draggable', 'true');
+            button.textContent = strategy.name;
+
+            // Add drag and drop functionality
+            button.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', index);
+                button.classList.add('dragging');
+            });
+
+            button.addEventListener('dragend', () => {
+                button.classList.remove('dragging');
+            });
+
+            button.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            button.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const dropIndex = index;
+
+                if (draggedIndex !== dropIndex) {
+                    // Reorder strategies
+                    const draggedStrategy = strategies.splice(draggedIndex, 1)[0];
+                    strategies.splice(dropIndex, 0, draggedStrategy);
+
+                    // Update active index
+                    if (activeStrategyIndex === draggedIndex) {
+                        activeStrategyIndex = dropIndex;
+                    } else if (activeStrategyIndex > draggedIndex && activeStrategyIndex <= dropIndex) {
+                        activeStrategyIndex--;
+                    } else if (activeStrategyIndex < draggedIndex && activeStrategyIndex >= dropIndex) {
+                        activeStrategyIndex++;
+                    }
+
+                    renderStrategyTabs();
+                    renderActiveStrategyForm();
+                    updateSummary();
+                }
+            });
+
+            // Tab click handler
+            button.addEventListener('click', () => {
+                saveCurrentStrategyForm();
+                activeStrategyIndex = index;
+                renderStrategyTabs();
+                renderActiveStrategyForm();
+                updateSummary();
+            });
+
+            li.appendChild(button);
+            tabsContainer.appendChild(li);
+        });
+    }
+
+    function renderActiveStrategyForm() {
+        const contentContainer = document.getElementById('strategyTabContent');
+        const strategy = strategies[activeStrategyIndex];
+
+        contentContainer.innerHTML = `
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label for="strategy-name" class="form-label">Strategy Name</label>
+                    <input type="text" class="form-control" id="strategy-name" value="${strategy.name}"
+                           onchange="updateStrategyName(${activeStrategyIndex}, this.value)">
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Bidding Parameters</h6>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="base_bid_${activeStrategyIndex}" class="form-label">Base Bid Amount ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control strategy-input" id="base_bid_${activeStrategyIndex}"
+                               name="base_bid_${activeStrategyIndex}" min="1000" step="100" value="${strategy.base_bid}" required>
+                    </div>
+                    <div class="form-text">Your starting bid for each ${momentName} moment</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="bid_increment_${activeStrategyIndex}" class="form-label">Bid Increment ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control strategy-input" id="bid_increment_${activeStrategyIndex}"
+                               name="bid_increment_${activeStrategyIndex}" min="100" step="100" value="${strategy.bid_increment}" required>
+                    </div>
+                    <div class="form-text">Amount to increase bid during competitive auctions</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="max_bid_${activeStrategyIndex}" class="form-label">Maximum Bid Amount ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control strategy-input" id="max_bid_${activeStrategyIndex}"
+                               name="max_bid_${activeStrategyIndex}" min="1000" step="100" value="${strategy.max_bid}" required>
+                    </div>
+                    <div class="form-text">Your system will never bid above this amount</div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Strategic Focus</h6>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="team_focus_${activeStrategyIndex}" class="form-label">Team Focus</label>
+                    <select class="form-select strategy-input" id="team_focus_${activeStrategyIndex}" name="team_focus_${activeStrategyIndex}" required>
+                        <option value="both" ${strategy.team_focus === 'both' ? 'selected' : ''}>Both Teams</option>
+                        <option value="home" ${strategy.team_focus === 'home' ? 'selected' : ''}>Home Team Only</option>
+                        <option value="away" ${strategy.team_focus === 'away' ? 'selected' : ''}>Away Team Only</option>
+                    </select>
+                    <div class="form-text">Select which team's ${momentName} moments you want to bid on</div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="player_focus_${activeStrategyIndex}" class="form-label">Player Focus (Optional)</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control strategy-input" id="player_focus_${activeStrategyIndex}"
+                               name="player_focus_${activeStrategyIndex}" placeholder="e.g., Connor McDavid, Sidney Crosby"
+                               value="${strategy.player_focus}">
+                        <button type="button" class="btn btn-outline-primary" onclick="openPlayerModal(${activeStrategyIndex})">
+                            <i class="fas fa-users me-1"></i> Browse Players
+                        </button>
+                    </div>
+                    <div class="form-text">Please select a game first to browse players from those teams</div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Time and Period Restrictions</h6>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="period_restrictions_${activeStrategyIndex}" class="form-label">Period Restrictions</label>
+                    <select class="form-select strategy-input" id="period_restrictions_${activeStrategyIndex}" name="period_restrictions_${activeStrategyIndex}">
+                        <option value="" ${!strategy.period_restrictions ? 'selected' : ''}>All Periods</option>
+                        <option value="1" ${strategy.period_restrictions === '1' ? 'selected' : ''}>1st Period Only</option>
+                        <option value="2" ${strategy.period_restrictions === '2' ? 'selected' : ''}>2nd Period Only</option>
+                        <option value="3" ${strategy.period_restrictions === '3' ? 'selected' : ''}>3rd Period Only</option>
+                        <option value="1,2" ${strategy.period_restrictions === '1,2' ? 'selected' : ''}>1st and 2nd Periods</option>
+                        <option value="2,3" ${strategy.period_restrictions === '2,3' ? 'selected' : ''}>2nd and 3rd Periods</option>
+                        <option value="OT" ${strategy.period_restrictions === 'OT' ? 'selected' : ''}>Overtime Only</option>
+                        <option value="SO" ${strategy.period_restrictions === 'SO' ? 'selected' : ''}>Shootout Only</option>
+                    </select>
+                    <div class="form-text">Restrict your bidding to specific periods</div>
+                </div>
+
+                ${momentName === 'Overtime Goal/Shootout' ? `
+                <div class="col-md-6 mb-3">
+                    <label for="specific_scenario_${activeStrategyIndex}" class="form-label">Specific Scenario</label>
+                    <select class="form-select strategy-input" id="specific_scenario_${activeStrategyIndex}" name="specific_scenario_${activeStrategyIndex}">
+                        <option value="both" ${strategy.specific_scenario === 'both' ? 'selected' : ''}>Both Overtime & Shootout</option>
+                        <option value="OT" ${strategy.specific_scenario === 'OT' ? 'selected' : ''}>Overtime Goal Only</option>
+                        <option value="SO" ${strategy.specific_scenario === 'SO' ? 'selected' : ''}>Shootout Only</option>
+                    </select>
+                    <div class="form-text">For overtime/shootout goals, specify which scenario you want to bid on</div>
+                </div>
+                ` : ''}
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Ad Content</h6>
+                </div>
+                <div class="col-12 mb-3">
+                    <label for="ad_content_${activeStrategyIndex}" class="form-label">Ad Content URL</label>
+                    <input type="text" class="form-control strategy-input" id="ad_content_${activeStrategyIndex}"
+                           name="ad_content_${activeStrategyIndex}" placeholder="https://yourdomain.com/ads/nhl-ad.mp4"
+                           value="${strategy.ad_content}">
+                    <div class="form-text">URL to your ad content that will appear in the instant replay overlay (placeholder URL is provided for testing)</div>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners to form inputs
+        const inputs = contentContainer.querySelectorAll('.strategy-input');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => {
+                saveCurrentStrategyForm();
+                updateSummary();
+            });
+        });
+
+        updateDeleteButtons();
+    }
+
+    function updateDeleteButtons() {
+        const container = document.getElementById('deleteButtonsContainer');
+        container.innerHTML = '';
+
+        // Only show delete buttons if there are strategies that can be deleted
+        if (strategies.length > 0 && (existingStrategies.length > 0 || strategies.length > 1)) {
+            strategies.forEach((strategy, index) => {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'btn btn-outline-danger btn-sm me-2 mb-2';
+                deleteBtn.innerHTML = `<i class="fas fa-trash-alt me-1"></i> Delete "${strategy.name}"`;
+                deleteBtn.onclick = () => removeStrategy(index);
+                container.appendChild(deleteBtn);
+            });
+        }
+    }
+
+    function updateStrategyName(index, newName) {
+        strategies[index].name = newName;
+        renderStrategyTabs();
+        updateSummary();
+    }
+
+    function saveCurrentStrategyForm() {
+        const strategy = strategies[activeStrategyIndex];
+
+        // Save all form values
+        const getValue = (id) => {
+            const element = document.getElementById(id);
+            return element ? element.value : '';
+        };
+
+        strategy.base_bid = parseInt(getValue(`base_bid_${activeStrategyIndex}`)) || strategy.base_bid;
+        strategy.bid_increment = parseInt(getValue(`bid_increment_${activeStrategyIndex}`)) || strategy.bid_increment;
+        strategy.max_bid = parseInt(getValue(`max_bid_${activeStrategyIndex}`)) || strategy.max_bid;
+        strategy.team_focus = getValue(`team_focus_${activeStrategyIndex}`) || strategy.team_focus;
+        strategy.player_focus = getValue(`player_focus_${activeStrategyIndex}`) || strategy.player_focus;
+        strategy.period_restrictions = getValue(`period_restrictions_${activeStrategyIndex}`) || strategy.period_restrictions;
+        strategy.ad_content = getValue(`ad_content_${activeStrategyIndex}`) || strategy.ad_content;
+        strategy.specific_scenario = getValue(`specific_scenario_${activeStrategyIndex}`) || strategy.specific_scenario;
+    }
+
+    function updateSummary() {
+        const summaryContainer = document.getElementById('strategySummaryList');
+        const totalStrategiesSpan = document.getElementById('total-strategies');
+        const combinedMaxBidSpan = document.getElementById('combined-max-bid');
+
+        let summaryHTML = '';
+        let totalMaxBid = 0;
+
+        strategies.forEach((strategy, index) => {
+            totalMaxBid += strategy.max_bid;
+
+            summaryHTML += `
+                <div class="mb-3 p-2 border rounded ${index === activeStrategyIndex ? 'bg-light' : ''}">
+                    <h6 class="mb-1">${strategy.name}</h6>
+                    <small>
+                        <strong>Bid Range:</strong> $${strategy.base_bid.toLocaleString()} - $${strategy.max_bid.toLocaleString()}<br>
+                        <strong>Team:</strong> ${strategy.team_focus === 'both' ? 'Both Teams' :
+                                                 strategy.team_focus === 'home' ? 'Home Team' : 'Away Team'}<br>
+                        ${strategy.player_focus ? `<strong>Players:</strong> ${strategy.player_focus}<br>` : ''}
+                        ${strategy.period_restrictions ? `<strong>Periods:</strong> ${strategy.period_restrictions}<br>` : ''}
+                    </small>
+                </div>
+            `;
+        });
+
+        summaryContainer.innerHTML = summaryHTML;
+        totalStrategiesSpan.textContent = strategies.length;
+        combinedMaxBidSpan.textContent = totalMaxBid.toLocaleString();
+    }
+
+    function updateGameInfo() {
+        const gameSelect = document.getElementById('game_id');
+        const summaryGame = document.getElementById('summary-game');
+
+        if (gameSelect && gameSelect.value) {
+            const selectedOption = gameSelect.options[gameSelect.selectedIndex];
+            selectedHomeTeam = selectedOption.getAttribute('data-home');
+            selectedAwayTeam = selectedOption.getAttribute('data-away');
+            summaryGame.textContent = selectedOption.text || 'Not selected';
+        }
+    }
+
+    function handleFormSubmission(e) {
+        e.preventDefault();
+
+        // Save current form state
+        saveCurrentStrategyForm();
+
+        // Create hidden inputs for all strategies
+        const form = e.target;
+
+        // Remove any existing strategy data inputs
+        form.querySelectorAll('input[name^="strategies"]').forEach(input => input.remove());
+
+        // Add strategy data as JSON
+        const strategiesInput = document.createElement('input');
+        strategiesInput.type = 'hidden';
+        strategiesInput.name = 'strategies_data';
+        strategiesInput.value = JSON.stringify(strategies);
+        form.appendChild(strategiesInput);
+
+        // Submit the form
+        form.submit();
+    }
+
+    // Player modal functions
+    function openPlayerModal(strategyIndex) {
+        currentPlayerModalStrategyIndex = strategyIndex;
+        const gameSelect = document.getElementById('game_id');
+
+        if (!gameSelect.value) {
+            alert('Please select a game first');
+            return;
+        }
+
+        updatePlayerTable();
+        const modal = new bootstrap.Modal(document.getElementById('playerSelectionModal'));
+        modal.show();
+    }
+
+    function setupPlayerModalEvents() {
+        // Initialize selected players array
+        let selectedPlayers = [];
+
+        // Modal event listeners
+        document.getElementById('confirmPlayerSelection').addEventListener('click', function() {
+            const playerNames = selectedPlayers.map(p => p.name).join(', ');
+            const playerInput = document.getElementById(`player_focus_${currentPlayerModalStrategyIndex}`);
+            if (playerInput) {
+                playerInput.value = playerNames;
+                saveCurrentStrategyForm();
+                updateSummary();
+            }
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
+            if (modal) {
+                modal.hide();
+            }
+        });
+
+        // Add player to selection
+        function addPlayerToSelection() {
+            const row = this.closest('tr');
+            const playerId = row.getAttribute('data-player-id');
+            const playerName = row.cells[0].textContent;
+            const playerTeam = row.cells[1].textContent;
+            const playerPosition = row.cells[2].textContent;
+
+            if (!selectedPlayers.some(p => p.id === playerId)) {
+                selectedPlayers.push({
+                    id: playerId,
+                    name: playerName,
+                    team: playerTeam,
+                    position: playerPosition
+                });
+
+                updateSelectedPlayersList();
+            }
+        }
+
+        // Update the selected players list
+        function updateSelectedPlayersList() {
+            const selectedPlayersList = document.getElementById('selectedPlayersList');
+            const noPlayersMessage = document.getElementById('noPlayersMessage');
+
+            if (selectedPlayers.length > 0) {
+                noPlayersMessage.style.display = 'none';
+                selectedPlayersList.innerHTML = '';
+
+                selectedPlayers.forEach(player => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    listItem.innerHTML = `
+                        <div>
+                            <strong>${player.name}</strong>
+                            <span class="ms-2 badge bg-secondary">${player.team} | ${player.position}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger remove-player" data-player-id="${player.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    selectedPlayersList.appendChild(listItem);
+                });
+
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-player').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const playerId = this.getAttribute('data-player-id');
+                        selectedPlayers = selectedPlayers.filter(p => p.id !== playerId);
+                        updateSelectedPlayersList();
+                    });
+                });
+            } else {
+                noPlayersMessage.style.display = 'block';
+                selectedPlayersList.innerHTML = '';
+            }
+        }
+
+        // Update player table based on selected game
         function updatePlayerTable() {
+            const playersTable = document.getElementById('playersTable').querySelector('tbody');
+            const teamFilter = document.getElementById('teamFilter');
+
             // Clear existing players
             playersTable.innerHTML = '';
 
@@ -522,16 +920,14 @@
                 button.addEventListener('click', addPlayerToSelection);
             });
 
-            // Update team filter with available teams for the selected game
+            // Update team filter
             teamFilter.innerHTML = '<option value="all">All Teams</option>';
-
             if (homeTeamCode) {
                 const option = document.createElement('option');
                 option.value = homeTeamCode;
                 option.textContent = selectedHomeTeam;
                 teamFilter.appendChild(option);
             }
-
             if (awayTeamCode) {
                 const option = document.createElement('option');
                 option.value = awayTeamCode;
@@ -540,96 +936,11 @@
             }
         }
 
-        // Array to store selected players
-        let selectedPlayers = [];
-
-        // Add player to selection
-        function addPlayerToSelection() {
-            const row = this.closest('tr');
-            const playerId = row.getAttribute('data-player-id');
-            const playerName = row.cells[0].textContent;
-            const playerTeam = row.cells[1].textContent;
-            const playerPosition = row.cells[2].textContent;
-
-            // Check if player is already selected
-            if (!selectedPlayers.some(p => p.id === playerId)) {
-                selectedPlayers.push({
-                    id: playerId,
-                    name: playerName,
-                    team: playerTeam,
-                    position: playerPosition
-                });
-
-                updateSelectedPlayersList();
-            }
-        }
-
-        // Update the selected players list
-        function updateSelectedPlayersList() {
-            const selectedPlayersList = document.getElementById('selectedPlayersList');
-            const noPlayersMessage = document.getElementById('noPlayersMessage');
-
-            if (selectedPlayers.length > 0) {
-                noPlayersMessage.style.display = 'none';
-                selectedPlayersList.innerHTML = '';
-
-                selectedPlayers.forEach(player => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    listItem.innerHTML = `
-                        <div>
-                            <strong>${player.name}</strong>
-                            <span class="ms-2 badge bg-secondary">${player.team} | ${player.position}</span>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-danger remove-player" data-player-id="${player.id}">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    selectedPlayersList.appendChild(listItem);
-                });
-
-                // Add event listeners to remove buttons
-                document.querySelectorAll('.remove-player').forEach(button => {
-                    button.addEventListener('click', removePlayer);
-                });
-            } else {
-                noPlayersMessage.style.display = 'block';
-                selectedPlayersList.innerHTML = '';
-            }
-        }
-
-        // Remove player from selection
-        function removePlayer() {
-            const playerId = this.getAttribute('data-player-id');
-            selectedPlayers = selectedPlayers.filter(p => p.id !== playerId);
-            updateSelectedPlayersList();
-        }
-
-        // Confirm player selection
-        document.getElementById('confirmPlayerSelection').addEventListener('click', function() {
-            const playerFocusInput = document.getElementById('player_focus');
-            const summaryPlayer = document.getElementById('summary-player');
-
-            const playerNames = selectedPlayers.map(p => p.name).join(', ');
-            playerFocusInput.value = playerNames;
-
-            // Update the summary as well if it exists
-            if (summaryPlayer) {
-                summaryPlayer.textContent = playerNames || 'All Players';
-            }
-
-            // Close the modal
-            const modalElement = document.getElementById('playerSelectionModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
-            }
-        });
-
-        // Filter players
+        // Filter functionality
         function filterPlayers() {
             const playerSearchInput = document.getElementById('playerSearchInput');
             const positionFilter = document.getElementById('positionFilter');
+            const teamFilter = document.getElementById('teamFilter');
 
             const searchText = playerSearchInput.value.toLowerCase();
             const position = positionFilter.value;
@@ -660,87 +971,69 @@
             }
         });
         document.getElementById('positionFilter').addEventListener('change', filterPlayers);
-        teamFilter.addEventListener('change', filterPlayers);
+        document.getElementById('teamFilter').addEventListener('change', filterPlayers);
 
-        // When player modal is about to be shown, load the players
-        document.getElementById('playerSelectionModal').addEventListener('show.bs.modal', function() {
-            updatePlayerTable();
-        });
+        // Store functions in window for access from onclick handlers
+        window.addPlayerToSelection = addPlayerToSelection;
+        window.updateSelectedPlayersList = updateSelectedPlayersList;
+        window.updatePlayerTable = updatePlayerTable;
+    }
 
-        // Base bid
-        const baseBidInput = document.getElementById('base_bid');
-        const summaryBaseBid = document.getElementById('summary-base-bid');
-
-        if (baseBidInput && summaryBaseBid) {
-            baseBidInput.addEventListener('input', function() {
-                summaryBaseBid.textContent = Number(this.value).toLocaleString();
-            });
-        }
-
-        // Bid increment
-        const bidIncrementInput = document.getElementById('bid_increment');
-        const summaryBidIncrement = document.getElementById('summary-bid-increment');
-
-        if (bidIncrementInput && summaryBidIncrement) {
-            bidIncrementInput.addEventListener('input', function() {
-                summaryBidIncrement.textContent = Number(this.value).toLocaleString();
-            });
-        }
-
-        // Max bid
-        const maxBidInput = document.getElementById('max_bid');
-        const summaryMaxBid = document.getElementById('summary-max-bid');
-
-        if (maxBidInput && summaryMaxBid) {
-            maxBidInput.addEventListener('input', function() {
-                summaryMaxBid.textContent = Number(this.value).toLocaleString();
-            });
-        }
-
-        // Team focus
-        const teamFocusSelect = document.getElementById('team_focus');
-        const summaryTeam = document.getElementById('summary-team');
-
-        if (teamFocusSelect && summaryTeam) {
-            teamFocusSelect.addEventListener('change', function() {
-                const teamMap = {
-                    'both': 'Both Teams',
-                    'home': 'Home Team Only',
-                    'away': 'Away Team Only'
-                };
-                summaryTeam.textContent = teamMap[this.value] || 'Both Teams';
-            });
-        }
-
-        // Player focus
-        const playerFocusInput = document.getElementById('player_focus');
-        const summaryPlayer = document.getElementById('summary-player');
-
-        if (playerFocusInput && summaryPlayer) {
-            playerFocusInput.addEventListener('input', function() {
-                summaryPlayer.textContent = this.value.trim() || 'All Players';
-            });
-        }
-
-        // Period restrictions
-        const periodRestrictionsSelect = document.getElementById('period_restrictions');
-        const summaryPeriods = document.getElementById('summary-periods');
-
-        if (periodRestrictionsSelect && summaryPeriods) {
-            periodRestrictionsSelect.addEventListener('change', function() {
-                const periodMap = {
-                    '': 'All Periods',
-                    '1': '1st Period Only',
-                    '2': '2nd Period Only',
-                    '3': '3rd Period Only',
-                    '1,2': '1st and 2nd Periods',
-                    '2,3': '2nd and 3rd Periods',
-                    'OT': 'Overtime Only',
-                    'SO': 'Shootout Only'
-                };
-                summaryPeriods.textContent = periodMap[this.value] || 'All Periods';
-            });
-        }
-    });
+    // Make functions available globally for onclick handlers
+    window.updateStrategyName = updateStrategyName;
+    window.openPlayerModal = openPlayerModal;
+    window.removeStrategy = removeStrategy;
 </script>
+
+<style>
+.nav-link.dragging {
+    opacity: 0.5;
+}
+
+.nav-link[draggable="true"]:hover {
+    cursor: move;
+}
+
+.strategy-tab-content {
+    min-height: 400px;
+}
+
+#strategySummaryList .bg-light {
+    border-color: #007bff !important;
+}
+
+/* Custom tab styling */
+.nav-tabs .nav-link.bg-primary {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
+}
+
+.nav-tabs .nav-link.bg-info {
+    background-color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: white !important;
+}
+
+.nav-tabs .nav-link.bg-primary:hover,
+.nav-tabs .nav-link.bg-info:hover {
+    opacity: 0.8;
+}
+
+.nav-tabs .nav-link {
+    margin-bottom: -1px;
+}
+
+/* Additional styling for the submit button */
+.btn-info {
+    background-color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: white !important;
+}
+
+.btn-info:hover {
+    background-color: #138496 !important;
+    border-color: #117a8b !important;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - NHL Instant Replay Bidding{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">User Management</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>User Management</h1>
+            <p class="lead">Manage registered users and their account information</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User List -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">User List</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for user_id, user_data in users.items() %}
+                        <a href="{{ url_for('admin_users', user_id=user_id) }}" 
+                           class="list-group-item list-group-item-action {% if user_id == selected_user_id %}active{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ user_data.name }}</h5>
+                                <small>ID: {{ user_id }}</small>
+                            </div>
+                            <p class="mb-1">{{ user_data.company }}</p>
+                            <small>{{ user_data.email }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if selected_user %}
+        <!-- User Details -->
+        <div class="col-md-8">
+            <div class="row">
+                <!-- Profile Info -->
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Profile Information</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('admin_users') }}">
+                                <input type="hidden" name="user_id" value="{{ selected_user_id }}">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ selected_user.name }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="company" class="form-label">Company</label>
+                                    <input type="text" class="form-control" id="company" name="company" value="{{ selected_user.company }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ selected_user.email }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ selected_user.phone if selected_user.phone else '' }}" placeholder="Optional">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update User</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Information -->
+                <div class="col-md-12">
+                    <div class="card mb-4" id="budget">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">Budget Overview</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <div class="progress" style="height: 30px;">
+                                        {% set spent_percentage = (selected_user.spent_budget / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+                                        {% set allocated_percentage = (selected_user.allocated_budget / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+                                        {% set available_percentage = (selected_user.available_budget / selected_user.total_budget * 100) if selected_user.total_budget > 0 else 0 %}
+
+                                        <div class="progress-bar bg-danger" style="width: {{ spent_percentage }}%"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Spent: ${{ '{:,.2f}'.format(selected_user.spent_budget) }}">
+                                            {% if spent_percentage >= 10 %}Spent{% endif %}
+                                        </div>
+                                        <div class="progress-bar bg-warning" style="width: {{ allocated_percentage }}%"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Allocated: ${{ '{:,.2f}'.format(selected_user.allocated_budget) }}">
+                                            {% if allocated_percentage >= 10 %}Allocated{% endif %}
+                                        </div>
+                                        <div class="progress-bar bg-success" style="width: {{ available_percentage }}%"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Available: ${{ '{:,.2f}'.format(selected_user.available_budget) }}">
+                                            {% if available_percentage >= 10 %}Available{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Total Budget:</strong></td>
+                                    <td>${{ "{:,.2f}".format(selected_user.total_budget) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Allocated to Strategies:</strong></td>
+                                    <td class="text-warning">${{ "{:,.2f}".format(selected_user.allocated_budget) }}</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td class="ps-4"><em>Actually Spent (Paid Wins):</em></td>
+                                    <td class="text-danger">${{ "{:,.2f}".format(selected_user.spent_budget) }}</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td class="ps-4"><em>Pending Payments:</em></td>
+                                    <td class="text-warning">${{ "{:,.2f}".format(selected_user.pending_win_amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Available for New Strategies:</strong></td>
+                                    <td class="text-success fw-bold">${{ "{:,.2f}".format(selected_user.available_budget) }}</td>
+                                </tr>
+                            </table>
+
+                            <!-- Pending Payments Alert -->
+                            {% if selected_user.pending_wins > 0 %}
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>User has pending payments</h6>
+                                <p>User has <strong>{{ selected_user.pending_wins }}</strong> unpaid winning bid{{ 's' if selected_user.pending_wins > 1 else '' }}
+                                totaling <strong>${{ "{:,.2f}".format(selected_user.pending_win_amount) }}</strong>.</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> Users must add funds to their accounts themselves through the payment system. Administrators cannot adjust user budgets directly.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-users fa-4x mb-3 text-muted"></i>
+                    <h3>Select a user to view details</h3>
+                    <p class="text-muted">Click on a user from the list to view and edit their information</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
+</script>
+{% endblock %}

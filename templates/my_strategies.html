@@ -18,28 +18,20 @@
     <div class="row mb-4">
         <div class="col-12">
             <h1>My Strategies</h1>
-            <p class="lead">Manage your automated bidding strategies and track their performance</p>
+            <p class="lead">Manage your automated bidding strategies and track your auction performance</p>
         </div>
     </div>
 
-    <!-- Summary Statistics -->
+    <!-- Summary Statistics - REVISED -->
     <div class="row mb-4 g-4">
         {% set total_strategies = user_strategies|length %}
-        {% set total_wins = 0 %}
-        {% set total_pending_wins = 0 %}
+        {% set total_wins = user_auction_results|length %}
         {% set total_spent = 0 %}
-        {% set total_pending_amount = 0 %}
         {% set win_count_by_strategy = {} %}
-        
+
         {% for result in user_auction_results %}
-            {% set total_wins = total_wins + 1 %}
-            {% if result.payment_status == 'completed' %}
-                {% set total_spent = total_spent + result.winning_amount %}
-            {% elif result.payment_status == 'pending' %}
-                {% set total_pending_wins = total_pending_wins + 1 %}
-                {% set total_pending_amount = total_pending_amount + result.winning_amount %}
-            {% endif %}
-            
+            {% set total_spent = total_spent + result.winning_amount %}
+
             {% if result.get('winning_strategy_id') %}
                 {% set strat_id = result.winning_strategy_id %}
                 {% if not win_count_by_strategy.get(strat_id) %}
@@ -48,22 +40,31 @@
                 {% set _ = win_count_by_strategy.update({strat_id: win_count_by_strategy[strat_id] + 1}) %}
             {% endif %}
         {% endfor %}
-        
+
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5>Total Strategies</h5>
-                    <h2>{{ total_strategies }}</h2>
-                    <p class="mb-0">Active & Inactive</p>
+                    <h5>Total Auction Wins</h5>
+                    <h2>{{ total_wins }}</h2>
+                    <p class="mb-0">Auctions Won</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5>Total Wins</h5>
-                    <h2>{{ total_wins }}</h2>
-                    <p class="mb-0">Auctions Won</p>
+                    <h5>Available Budget</h5>
+                    <h2>${{ "{:,.2f}".format(user.available_budget) }}</h2>
+                    <p class="mb-0">For New Strategies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Allocated to Strategies</h5>
+                    <h2>${{ "{:,.2f}".format(user.allocated_budget) }}</h2>
+                    <p class="mb-0">Reserved Funds</p>
                 </div>
             </div>
         </div>
@@ -71,199 +72,193 @@
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <h5>Actually Spent</h5>
-                    <h2>${{ "{:,.2f}".format(total_spent) }}</h2>
-                    <p class="mb-0">On Paid Wins</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5>Pending Payments</h5>
-                    <h2>${{ "{:,.2f}".format(total_pending_amount) }}</h2>
-                    <p class="mb-0">{{ total_pending_wins }} Unpaid Win{{ 's' if total_pending_wins != 1 else '' }}</p>
+                    <h2>${{ "{:,.2f}".format(user.spent_budget) }}</h2>
+                    <p class="mb-0">On Winning Bids</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Budget Information Banner -->
-    <div class="alert alert-info mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Budget Information</h5>
-                <p class="mb-0">
-                    <strong>Available Budget:</strong> ${{ "{:,.2f}".format(user.available_budget) }} | 
-                    <strong>Allocated to Strategies:</strong> ${{ "{:,.2f}".format(user.allocated_budget) }} | 
-                    <strong>Actually Spent:</strong> ${{ "{:,.2f}".format(user.spent_budget) }}
-                </p>
-                <small class="text-muted">
-                    Money is only deducted from your account when you win and pay for auctions. 
-                    Strategy allocations are just reservations.
-                </small>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ url_for('profile') }}#budget" class="btn btn-primary">
-                    <i class="fas fa-wallet me-1"></i> Add Funds
-                </a>
-            </div>
-        </div>
+    <!-- Simplified Budget Information Banner with centered Add Funds button -->
+    <div class="alert alert-info mb-4 text-center">
+        <a href="{{ url_for('profile') }}#budget" class="btn btn-primary btn-lg">
+            <i class="fas fa-wallet me-1"></i> Add Funds to Your Account
+        </a>
     </div>
 
-    <!-- Tabs for Active/All/Archive -->
+    <!-- Tabs for Active/All/Archive - IMPROVED STYLING -->
     <ul class="nav nav-tabs mb-4" id="strategiesTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">
-                Active Strategies
+            <button class="nav-link active bg-primary text-white" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">
+                <i class="fas fa-play-circle me-1"></i> Active Strategies
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
-                All Strategies
+            <button class="nav-link bg-secondary text-white" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                <i class="fas fa-list me-1"></i> All Strategies
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="wins-tab" data-bs-toggle="tab" data-bs-target="#wins" type="button" role="tab" aria-controls="wins" aria-selected="false">
-                Wins Archive <span class="badge bg-primary">{{ total_wins }}</span>
+            <button class="nav-link bg-success text-white" id="wins-tab" data-bs-toggle="tab" data-bs-target="#wins" type="button" role="tab" aria-controls="wins" aria-selected="false">
+                <i class="fas fa-trophy me-1"></i> Auction Wins <span class="badge bg-light text-success">{{ total_wins }}</span>
             </button>
         </li>
     </ul>
 
     <div class="tab-content" id="strategiesTabContent">
-        <!-- Active Strategies Tab -->
-        <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
-            {% set active_strategies = [] %}
-            {% for strat_id, strategy in user_strategies.items() %}
-                {% if strategy.get('status') != 'inactive' %}
-                    {% set _ = active_strategies.append((strat_id, strategy)) %}
-                {% endif %}
-            {% endfor %}
 
-            {% if active_strategies %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Game</th>
-                                <th>Moment</th>
-                                <th>Bid Range</th>
-                                <th>Focus</th>
-                                <th>Wins</th>
-                                <th>Actual Spent</th>
-                                <th>Pending Payments</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for strategy_id, strategy in active_strategies %}
-                                {% set strategy_wins = [] %}
-                                {% set strategy_spent = 0 %}
-                                {% set strategy_pending = 0 %}
-                                {% for result in user_auction_results %}
-                                    {% if result.get('winning_strategy_id') == strategy_id %}
-                                        {% set _ = strategy_wins.append(result) %}
-                                        {% if result.payment_status == 'completed' %}
-                                            {% set strategy_spent = strategy_spent + result.winning_amount %}
-                                        {% elif result.payment_status == 'pending' %}
-                                            {% set strategy_pending = strategy_pending + result.winning_amount %}
-                                        {% endif %}
-                                    {% endif %}
-                                {% endfor %}
+<!-- Active Strategies Tab -->
+<div class="tab-pane fade show active p-4" id="active" role="tabpanel" aria-labelledby="active-tab">
+    {% set active_strategies = [] %}
+    {% for strat_id, strategy in user_strategies.items() %}
+        {% if strategy.get('status') != 'inactive' %}
+            {% set _ = active_strategies.append((strat_id, strategy)) %}
+        {% endif %}
+    {% endfor %}
 
-                                <tr>
-                                    <td>
-                                        {% if strategy.game_id %}
-                                            {% set game = None %}
-                                            {% for g in upcoming_games %}
-                                                {% if g.id == strategy.game_id %}
-                                                    {% set game = g %}
-                                                {% endif %}
-                                            {% endfor %}
-                                            {% if game %}
-                                                {{ game.away }} @ {{ game.home }}<br>
-                                                <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
-                                                {% if game.get('status') == 'live' %}
-                                                    <span class="badge bg-success ms-1">LIVE</span>
-                                                {% endif %}
-                                            {% else %}
-                                                Unknown Game
-                                            {% endif %}
-                                        {% else %}
-                                            Unknown Game
+    {% if active_strategies %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Game</th>
+                        <th>Moment</th>
+                        <th>Bid Range</th>
+                        <th>Focus & Restrictions</th>
+                        <th class="text-center">Wins</th>
+                        <th class="text-end">Spent</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for strategy_id, strategy in active_strategies %}
+                        <!-- Use pre-calculated wins and spent amounts from the route -->
+                        {% set win_count = strategy.get('wins_count', 0) %}
+                        {% set strategy_spent = strategy.get('spent_amount', 0) %}
+
+                        <!-- Find the matching game -->
+                        {% set game = strategy.get('game') %}
+
+                        <tr>
+                            <td>
+                                {% if game %}
+                                    <div class="d-flex align-items-center">
+                                        {% if game.get('status') == 'live' %}
+                                            <span class="badge bg-success me-2">LIVE</span>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if strategy.moment_id %}
-                                            {% if moments[strategy.moment_id|string] %}
-                                                {{ moments[strategy.moment_id|string].name }}
-                                            {% else %}
-                                                Unknown Moment
-                                            {% endif %}
-                                        {% else %}
-                                            Unknown Moment
-                                        {% endif %}
-                                    </td>
-                                    <td>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</td>
-                                    <td>
-                                        {% if strategy.team_focus == 'both' %}
-                                            Both Teams
-                                        {% elif strategy.team_focus == 'home' %}
-                                            Home Team
-                                        {% elif strategy.team_focus == 'away' %}
-                                            Away Team
-                                        {% endif %}
-                                        {% if strategy.player_focus %}
-                                            <br><small>{{ strategy.player_focus }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success">{{ strategy_wins|length }}</span>
-                                    </td>
-                                    <td>
-                                        {% if strategy_spent > 0 %}
-                                            <span class="text-danger fw-bold">${{ "{:,.2f}".format(strategy_spent) }}</span>
-                                        {% else %}
-                                            <span class="text-muted">$0.00</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if strategy_pending > 0 %}
-                                            <span class="text-warning fw-bold">${{ "{:,.2f}".format(strategy_pending) }}</span>
-                                            <a href="{{ url_for('auction_listings') }}" class="btn btn-sm btn-outline-warning ms-1">
-                                                <i class="fas fa-credit-card me-1"></i> Pay
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted">$0.00</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('setup_strategy', moment_id=strategy.moment_id, game_id=strategy.game_id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#winsModal"
-                                                    data-strategy-id="{{ strategy_id }}"
-                                                    data-strategy-wins='{{ strategy_wins|tojson }}'>
-                                                View Wins
-                                            </button>
+                                        <div>
+                                            <strong>{{ game.away }} @ {{ game.home }}</strong><br>
+                                            <small class="text-muted">{{ game.date }} | {{ game.get('time', '') }}</small>
                                         </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center py-5 border rounded bg-light">
-                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
-                    <h5>No Active Strategies</h5>
-                    <p class="text-muted">You don't have any active bidding strategies.</p>
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
-                        <i class="fas fa-plus me-1"></i> Create Strategy
-                    </a>
-                </div>
-            {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Game ID: {{ strategy.game_id }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set moment_name = 'Unknown' %}
+                                {% if strategy.moment_id|string in moments %}
+                                    {% set moment_name = moments[strategy.moment_id|string].name %}
+                                {% endif %}
+                                <span class="badge bg-secondary p-2">{{ moment_name }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                        <div class="progress-bar bg-primary" style="width: 100%"></div>
+                                    </div>
+                                    <span>${{ "{:,.0f}".format(strategy.base_bid) }} - ${{ "{:,.0f}".format(strategy.max_bid) }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Team Focus -->
+                                {% if strategy.team_focus == 'both' %}
+                                    <span class="badge bg-info">Both Teams</span>
+                                {% elif strategy.team_focus == 'home' %}
+                                    <span class="badge bg-info">Home Team</span>
+                                {% elif strategy.team_focus == 'away' %}
+                                    <span class="badge bg-info">Away Team</span>
+                                {% endif %}
+
+                                <!-- Player Focus -->
+                                {% if strategy.player_focus %}
+                                    <br><small class="text-primary fw-bold">Players: {{ strategy.player_focus }}</small>
+                                {% endif %}
+
+                                <!-- Period Restrictions -->
+                                {% if strategy.period_restrictions %}
+                                    <br>
+                                    <small class="fw-bold">
+                                        Period(s):
+                                        {% if strategy.period_restrictions == '1' %}1st Period Only
+                                        {% elif strategy.period_restrictions == '2' %}2nd Period Only
+                                        {% elif strategy.period_restrictions == '3' %}3rd Period Only
+                                        {% elif strategy.period_restrictions == '1,2' %}1st and 2nd Periods
+                                        {% elif strategy.period_restrictions == '2,3' %}2nd and 3rd Periods
+                                        {% elif strategy.period_restrictions == 'OT' %}Overtime Only
+                                        {% elif strategy.period_restrictions == 'SO' %}Shootout Only
+                                        {% else %}{{ strategy.period_restrictions }}
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+
+                                <!-- Specific Scenario for Overtime/Shootout -->
+                                {% if strategy.specific_scenario %}
+                                    <br>
+                                    <small class="fw-bold">
+                                        Scenario:
+                                        {% if strategy.specific_scenario == 'both' %}Both OT & Shootout
+                                        {% elif strategy.specific_scenario == 'OT' %}Overtime Goal Only
+                                        {% elif strategy.specific_scenario == 'SO' %}Shootout Only
+                                        {% else %}{{ strategy.specific_scenario }}
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if win_count > 0 %}
+                                    <span class="badge bg-success p-2">{{ win_count }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if strategy_spent > 0 %}
+                                    <span class="text-danger fw-bold">${{ "{:,.2f}".format(strategy_spent) }}</span>
+                                {% else %}
+                                    <span class="text-muted">$0.00</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('setup_strategy', moment_id=strategy.moment_id, game_id=strategy.game_id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#winsModal"
+                                            data-strategy-id="{{ strategy_id }}"
+                                            data-strategy-wins='{{ strategy.get("wins", [])|tojson }}'>
+                                        <i class="fas fa-trophy"></i> Wins
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+            <h5>No Active Strategies</h5>
+            <p class="text-muted">You don't have any active bidding strategies.</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-2">
+                <i class="fas fa-plus me-1"></i> Create Strategy
+            </a>
+        </div>
+    {% endif %}
+</div>
 
         <!-- All Strategies Tab -->
         <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
@@ -279,7 +274,6 @@
                                 <th>Status</th>
                                 <th>Wins</th>
                                 <th>Actual Spent</th>
-                                <th>Pending</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -287,33 +281,19 @@
                             {% for strategy_id, strategy in user_strategies.items() %}
                                 {% set strategy_wins = [] %}
                                 {% set strategy_spent = 0 %}
-                                {% set strategy_pending = 0 %}
                                 {% for result in user_auction_results %}
-                                    {% if result.get('winning_strategy_id') == strategy_id %}
+                                    {% if result.get('winning_strategy_id') and result.get('winning_strategy_id')|string == strategy_id|string %}
                                         {% set _ = strategy_wins.append(result) %}
-                                        {% if result.payment_status == 'completed' %}
-                                            {% set strategy_spent = strategy_spent + result.winning_amount %}
-                                        {% elif result.payment_status == 'pending' %}
-                                            {% set strategy_pending = strategy_pending + result.winning_amount %}
-                                        {% endif %}
+                                        {% set strategy_spent = strategy_spent + result.winning_amount %}
                                     {% endif %}
                                 {% endfor %}
 
                                 <tr class="{% if strategy.get('status') == 'inactive' %}table-light{% endif %}">
                                     <td>
-                                        {% if strategy.game_id %}
-                                            {% set game = None %}
-                                            {% for g in upcoming_games %}
-                                                {% if g.id == strategy.game_id %}
-                                                    {% set game = g %}
-                                                {% endif %}
-                                            {% endfor %}
-                                            {% if game %}
-                                                {{ game.away }} @ {{ game.home }}<br>
-                                                <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
-                                            {% else %}
-                                                Unknown Game
-                                            {% endif %}
+                                        {% if strategy.get('game') %}
+                                            {% set game = strategy.get('game') %}
+                                            {{ game.away }} @ {{ game.home }}<br>
+                                            <small class="text-muted">{{ game.date }} | {{ game.time }}</small>
                                         {% else %}
                                             Unknown Game
                                         {% endif %}
@@ -353,13 +333,6 @@
                                     <td>
                                         {% if strategy_spent > 0 %}
                                             <span class="text-danger fw-bold">${{ "{:,.2f}".format(strategy_spent) }}</span>
-                                        {% else %}
-                                            <span class="text-muted">$0.00</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if strategy_pending > 0 %}
-                                            <span class="text-warning fw-bold">${{ "{:,.2f}".format(strategy_pending) }}</span>
                                         {% else %}
                                             <span class="text-muted">$0.00</span>
                                         {% endif %}
@@ -405,6 +378,11 @@
                         <button type="button" class="btn btn-outline-secondary" id="clearFilter">Clear</button>
                     </form>
                 </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <strong>Total Wins:</strong> {{ user_auction_results|length }} auctions won
+                    </p>
+                </div>
             </div>
 
             {% if user_auction_results %}
@@ -426,23 +404,21 @@
                                 <tr data-date="{{ result.created_at }}">
                                     <td>{{ result.created_at }}</td>
                                     <td>
-                                        {% set auction = auctions.get(result.auction_id, {}) %}
-                                        {% set game = None %}
-                                        {% for g in upcoming_games %}
-                                            {% if g.id == auction.game_id %}
-                                                {% set game = g %}
-                                            {% endif %}
-                                        {% endfor %}
-                                        {% if game %}
+                                        {% if result.get('game') %}
+                                            {% set game = result.get('game') %}
                                             {{ game.away }} @ {{ game.home }}<br>
                                             <small class="text-muted">{{ game.date }}</small>
+                                        {% elif result.get('game_info') %}
+                                            {{ result.get('game_info') }}
                                         {% else %}
                                             Unknown Game
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set moment = moments.get(auction.moment_id, {}) %}
-                                        {{ moment.get('name', 'Unknown Moment') }}
+                                        {% set auction = auctions.get(result.auction_id, {}) %}
+                                        {% set moment_id = auction.get('moment_id')|string %}
+                                        {% set moment = moments.get(moment_id) %}
+                                        <span class="badge bg-secondary">{{ moment.name if moment else 'Unknown Moment' }}</span>
                                     </td>
                                     <td>
                                         {% if result.get('winning_strategy_id') %}
@@ -453,14 +429,10 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="text-success fw-bold">${{ "{:,.2f}".format(result.winning_amount) }}</span>
+                                        <span class="text-danger fw-bold">${{ "{:,.2f}".format(result.winning_amount) }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge {% if result.payment_status == 'completed' %}bg-success
-                                                          {% elif result.payment_status == 'pending' %}bg-warning
-                                                          {% else %}bg-danger{% endif %}">
-                                            {{ result.payment_status|capitalize }}
-                                        </span>
+                                        <span class="badge bg-success">Completed</span>
                                     </td>
                                     <td>
                                         <a href="{{ url_for('auction_detail', auction_id=result.auction_id) }}" class="btn btn-sm btn-outline-primary">
@@ -537,10 +509,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr>
                         <td>${win.created_at}</td>
                         <td>${win.game_info || 'Unknown Game'}</td>
-                        <td class="text-success fw-bold">$${win.winning_amount.toFixed(2)}</td>
+                        <td class="text-danger fw-bold">$${win.winning_amount.toFixed(2)}</td>
                         <td>
-                            <span class="badge ${win.payment_status === 'completed' ? 'bg-success' : 'bg-warning'}">
-                                ${win.payment_status.charAt(0).toUpperCase() + win.payment_status.slice(1)}
+                            <span class="badge bg-success">
+                                Completed
                             </span>
                         </td>
                         <td>

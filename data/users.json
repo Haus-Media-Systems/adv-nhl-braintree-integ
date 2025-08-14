@@ -51,10 +51,18 @@
     "company": "Jake Co",
     "email": "jake@jakeco.com",
     "password": "jakepw",
-    "budget": 20000.0,
+    "budget": 30000.0,
     "total_budget": 20000.0,
-    "used_budget": 7000.0,
-    "available_budget": 13000.0
+    "used_budget": 12500.0,
+    "available_budget": 7500.0,
+    "allocated_budget": 20000.0,
+    "spent_budget": 12500.0,
+    "pending_wins": 0,
+    "pending_win_amount": 0,
+    "is_admin": false,
+    "wins_count": 3,
+    "total_spent": 12500.0,
+    "braintree_customer_id": "52773511523"
   },
   "admin": {
     "id": "admin",
@@ -71,10 +79,18 @@
     "company": "Phil Co",
     "email": "phil@philco.com",
     "password": "philpw",
-    "budget": 35000.0,
-    "total_budget": 35000.0,
-    "used_budget": 8000.0,
-    "available_budget": 27000.0
+    "budget": 135000.0,
+    "total_budget": 135000.0,
+    "used_budget": 83300.0,
+    "available_budget": 51700.0,
+    "allocated_budget": 32500.0,
+    "spent_budget": 83300.0,
+    "pending_wins": 0,
+    "pending_win_amount": 0,
+    "is_admin": false,
+    "wins_count": 17,
+    "total_spent": 83300.0,
+    "braintree_customer_id": "89844186294"
   },
   "1a031094-9e0f-4e4e-9667-b134f9a9fdbe": {
     "id": "1a031094-9e0f-4e4e-9667-b134f9a9fdbe",
@@ -82,10 +98,17 @@
     "company": "Susie Co",
     "email": "susie@susieco.com",
     "password": "susiepw",
-    "budget": 56000.0,
-    "total_budget": 31000.0,
-    "used_budget": 30500.0,
-    "available_budget": 500.0,
-    "is_admin": false
+    "budget": 106000.0,
+    "total_budget": 106000.0,
+    "used_budget": 80800.0,
+    "available_budget": 25200.0,
+    "is_admin": false,
+    "allocated_budget": 30500.0,
+    "spent_budget": 80800.0,
+    "pending_wins": 0,
+    "pending_win_amount": 0,
+    "wins_count": 16,
+    "total_spent": 80800.0,
+    "braintree_customer_id": "16062589749"
   }
 }

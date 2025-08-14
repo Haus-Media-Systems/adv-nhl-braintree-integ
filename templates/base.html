@@ -253,7 +253,12 @@
             position: relative;
             z-index: 1000;
         }
-        
+
+        /* Fix for dropdown menus appearing behind the banner */
+        .dropdown-menu {
+            z-index: 1010; /* Higher than the live-game-banner's z-index */
+        }
+
         .live-indicator {
             display: inline-block;
             width: 12px;
@@ -263,25 +268,25 @@
             margin-right: 8px;
             animation: liveBlink 1s infinite;
         }
-        
+
         @keyframes liveBlink {
             0% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.3; transform: scale(0.8); }
             100% { opacity: 1; transform: scale(1); }
         }
-        
+
         .live-game-link:hover .badge {
             background-color: #20c997 !important;
             transform: translateY(-1px);
             transition: all 0.2s ease;
         }
-        
+
         /* Adjust main content to account for live banner */
         @media (max-width: 767px) {
             .live-game-banner {
                 padding: 10px 0;
             }
-            
+
             .live-game-banner .d-flex {
                 flex-direction: column;
                 gap: 10px;
@@ -309,38 +314,51 @@
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
     </li>
- <li class="nav-item">
-<a class="nav-link" href="{{ url_for('auction_listings') }}">Auctions</a>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('auction_listings') }}">Auctions</a>
     </li>
-    <!-- Add admin game management link -->
+    <!-- Admin dropdown menu with only Game Management and Financial items -->
     {% if user.get('is_admin', False) %}
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('admin_games') }}">Game Management</a>
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Admin
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+            <li><a class="dropdown-item" href="{{ url_for('admin_games') }}">Game Management</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin_financials') }}">Financial Management</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin_payment_distributions') }}">Payment Distributions</a></li>
+        </ul>
     </li>
-<li class="nav-item">
-    <a class="nav-link" href="{{ url_for('admin_financials') }}">Financial Management</a>
-</li>
     {% endif %}
+    
+    <!-- Strategies link - different for admin vs regular users -->
     <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('my_strategies') }}">My Strategies</a>
+        {% if user.get('is_admin', False) %}
+            <a class="nav-link" href="{{ url_for('admin_strategies') }}">User Strategies</a>
+        {% else %}
+            <a class="nav-link" href="{{ url_for('my_strategies') }}">My Strategies</a>
+        {% endif %}
     </li>
+    
+    <!-- Profile link - different for admin vs regular users -->
     <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('simulation') }}">Simulation</a>
-    </li>
-    <!-- Add the new Profile link here -->
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('profile') }}">My Profile</a>
+        {% if user.get('is_admin', False) %}
+            <a class="nav-link" href="{{ url_for('admin_users') }}">User Management</a>
+        {% else %}
+            <a class="nav-link" href="{{ url_for('profile') }}">My Profile</a>
+        {% endif %}
     </li>
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
     </li>
-{% else %}                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                        </li>
-                    {% endif %}
+{% else %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+    </li>
+{% endif %}
                 </ul>
             </div>
         </div>
@@ -354,7 +372,7 @@
                 {% set _ = live_games.append(game) %}
             {% endif %}
         {% endfor %}
-        
+
         {% if live_games %}
             <div class="live-game-banner">
                 <div class="container">
