@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+
+{% block title %}SCTE NHL Auction Platform - Real-time Stream-Triggered Auctions{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hero Section -->
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">
+                Real-Time SCTE-Triggered NHL Auctions
+            </h1>
+            <p class="lead mb-4">
+                Revolutionary advertising platform that triggers instant auctions based on 
+                SCTE-35/104 markers in live video streams. Millisecond-speed automated 
+                bidding for premium placement during the most exciting hockey moments.
+            </p>
+            
+            {% if not user %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <button class="btn btn-outline-primary btn-lg px-4" onclick="showDemoModal()">
+                        <i class="fas fa-play"></i> View Demo
+                    </button>
+                </div>
+            {% else %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-tachometer-alt"></i> My Dashboard
+                    </a>
+                    <a href="{{ url_for('my_strategies') }}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="fas fa-brain"></i> My Strategies
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <span class="scte-indicator {% if scte_status.listener_active %}scte-active{% else %}scte-inactive{% endif %}"></span>
+                        SCTE System Status
+                    </h5>
+                    
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3">
+                            <div class="h4 text-primary">{{ scte_status.total_markers }}</div>
+                            <small class="text-muted">Markers</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="h4 text-success">{{ scte_status.active_auctions }}</div>
+                            <small class="text-muted">Active</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="h4 text-info">{{ scte_status.total_scte_auctions }}</div>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="h4 {% if scte_status.listener_active %}text-success{% else %}text-danger{% endif %}">
+                                {% if scte_status.listener_active %}ON{% else %}OFF{% endif %}
+                            </div>
+                            <small class="text-muted">Listener</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How SCTE Integration Works -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2 class="display-5 fw-bold">How SCTE Integration Works</h2>
+            <p class="lead">Real-time auction triggers based on video stream markers</p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-satellite-dish fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title">SCTE Markers Detected</h3>
+                    <p class="card-text">
+                        SCTE-35/104 markers embedded in video streams are detected in real-time, 
+                        carrying metadata about game events like goals, saves, and penalties.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-bolt fa-3x mb-3 text-warning"></i>
+                    <h3 class="card-title">Instant Auctions</h3>
+                    <p class="card-text">
+                        When key moments occur, the system instantly creates and executes 
+                        auctions in milliseconds, with values based on event importance.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-trophy fa-3x mb-3 text-success"></i>
+                    <h3 class="card-title">Automated Bidding</h3>
+                    <p class="card-text">
+                        Pre-configured strategies automatically bid on relevant moments, 
+                        ensuring you never miss an opportunity for premium ad placement.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Types and Values -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-tags"></i> Event Types & Base Values
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>High-Value Events</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-hockey-puck text-danger"></i> Goal Scored</span>
+                                    <span class="badge bg-danger">$5,000</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-shield-alt text-primary"></i> Spectacular Save</span>
+                                    <span class="badge bg-primary">$2,500</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-fist-raised text-warning"></i> Fight</span>
+                                    <span class="badge bg-warning text-dark">$3,500</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-video text-info"></i> Instant Replay</span>
+                                    <span class="badge bg-info">$3,000</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Standard Events</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-exclamation-triangle text-secondary"></i> Penalty</span>
+                                    <span class="badge bg-secondary">$1,500</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-bolt text-success"></i> Power Play</span>
+                                    <span class="badge bg-success">$2,000</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-clock text-dark"></i> Period End</span>
+                                    <span class="badge bg-dark">$1,000</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-tv text-muted"></i> Commercial Break</span>
+                                    <span class="badge bg-light text-dark">$500</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Values are automatically adjusted based on context: overtime (+50%), playoffs (+100%), 
+                            star players (+25%), rivalry games (+30%), and close games (+40%).
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Integration -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cogs"></i> Technical Integration
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>SCTE-35/104 Compatibility</h5>
+                            <p>
+                                Our platform listens for SCTE-35 splice insert commands and time signals 
+                                via UDP on port 9999. Markers should include JSON metadata in the private 
+                                data section specifying event type, team, period, and context modifiers.
+                            </p>
+                            
+                            <h5>Supported Broadcast Systems</h5>
+                            <ul>
+                                <li>Elemental Live and MediaLive</li>
+                                <li>Wowza Streaming Engine</li>
+                                <li>Evertz SCTE-35 inserters</li>
+                                <li>Custom UDP marker injection</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Sample SCTE Marker</h6>
+                                    <pre><code>{
+  "event_type": "goal",
+  "game_id": "nyr_vs_bos_001",
+  "period": "2",
+  "team_id": "NYR",
+  "player_ids": ["player_123"],
+  "is_overtime": false,
+  "star_player": true,
+  "close_game": true
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user and user.get('is_admin', False) %}
+    <!-- Admin Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-tools"></i> Admin Quick Actions
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('scte_dashboard') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-satellite-dish"></i><br>
+                                SCTE Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100 mb-2" onclick="toggleSCTEListener()">
+                                <i class="fas fa-play"></i><br>
+                                Toggle Listener
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100 mb-2" onclick="sendTestMarker()">
+                                <i class="fas fa-vial"></i><br>
+                                Test Marker
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('scte_configuration') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-cog"></i><br>
+                                Configuration
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Demo Modal -->
+<div class="modal fade" id="demoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">SCTE NHL Auction Platform Demo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="about:blank" id="demoVideo"></iframe>
+                </div>
+                <div class="mt-3">
+                    <h6>Demo Features:</h6>
+                    <ul>
+                        <li>Real-time SCTE marker detection and processing</li>
+                        <li>Instant auction creation with context-aware pricing</li>
+                        <li>Automated strategy-based bidding</li>
+                        <li>Live monitoring and analytics dashboard</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showDemoModal() {
+    new bootstrap.Modal(document.getElementById('demoModal')).show();
+}
+
+function toggleSCTEListener() {
+    const action = {{ 'stop' if scte_status.listener_active else 'start' }};
+    
+    fetch(`/scte/listener/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error);
+    });
+}
+
+function sendTestMarker() {
+    const testData = {
+        event_type: 'goal',
+        game_id: 'demo_game',
+        period: '1',
+        team_id: 'NYR',
+        star_player: true,
+        close_game: true
+    };
+    
+    fetch('/scte/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(testData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Test goal marker sent successfully! Check the SCTE dashboard for results.');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error);
+    });
+}
+</script>
+{% endblock %}

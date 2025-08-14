@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SCTE NHL Auction Platform{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --nhl-blue: #0033a0;
+            --nhl-red: #d2001c;
+            --scte-green: #28a745;
+            --scte-orange: #fd7e14;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--nhl-blue) 0%, #004080 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .scte-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .scte-active {
+            background-color: var(--scte-green);
+            animation: pulse 2s infinite;
+        }
+        
+        .scte-inactive {
+            background-color: var(--nhl-red);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--nhl-blue) 0%, #004080 100%);
+            border: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--scte-green) 0%, #1e7e34 100%);
+            border: none;
+        }
+        
+        .scte-trigger-badge {
+            background: linear-gradient(135deg, var(--scte-orange) 0%, #e55b00 100%);
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .live-stats {
+            background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-hockey-puck me-2"></i>
+                <span class="scte-indicator {% if scte_status and scte_status.listener_active %}scte-active{% else %}scte-inactive{% endif %}"></span>
+                SCTE NHL Auctions
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    
+                    {% if user %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auction_listings') }}">
+                                <i class="fas fa-gavel"></i> Auctions
+                                {% if scte_status and scte_status.active_auctions > 0 %}
+                                    <span class="badge bg-warning text-dark">{{ scte_status.active_auctions }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('my_strategies') }}">
+                                <i class="fas fa-brain"></i> Strategies
+                            </a>
+                        </li>
+                        
+                        {% if user.get('is_admin', False) %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog"></i> Admin
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('scte_dashboard') }}">
+                                            <i class="fas fa-satellite-dish"></i> SCTE Dashboard
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-users"></i> User Management
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="fas fa-dollar-sign"></i> Financials
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>SCTE NHL Auction Platform</h5>
+                    <p class="mb-0">Real-time auction system triggered by SCTE-35/104 markers</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">
+                        <span class="scte-indicator {% if scte_status and scte_status.listener_active %}scte-active{% else %}scte-inactive{% endif %}"></span>
+                        SCTE Status: {% if scte_status and scte_status.listener_active %}Active{% else %}Inactive{% endif %}
+                    </p>
+                    <small class="text-muted">
+                        Markers: {{ scte_status.total_markers if scte_status else 0 }} | 
+                        Auctions: {{ scte_status.total_scte_auctions if scte_status else 0 }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Live Updates Script -->
+    <script>
+        // Auto-refresh live stats every 10 seconds
+        setInterval(function() {
+            if (document.visibilityState === 'visible') {
+                fetch('/api/live-stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update SCTE indicators
+                            const indicators = document.querySelectorAll('.scte-indicator');
+                            indicators.forEach(indicator => {
+                                if (data.stats.scte.listener_active) {
+                                    indicator.classList.remove('scte-inactive');
+                                    indicator.classList.add('scte-active');
+                                } else {
+                                    indicator.classList.remove('scte-active');
+                                    indicator.classList.add('scte-inactive');
+                                }
+                            });
+                            
+                            // Update counters if they exist
+                            const activeAuctionBadge = document.querySelector('.navbar .badge');
+                            if (activeAuctionBadge && data.stats.auctions.active > 0) {
+                                activeAuctionBadge.textContent = data.stats.auctions.active;
+                                activeAuctionBadge.style.display = 'inline';
+                            } else if (activeAuctionBadge) {
+                                activeAuctionBadge.style.display = 'none';
+                            }
+                        }
+                    })
+                    .catch(error => console.log('Live stats update failed:', error));
+            }
+        }, 10000);
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

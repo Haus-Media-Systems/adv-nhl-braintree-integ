@@ -1,0 +1,362 @@
+{
+  "NYR-1": {
+    "id": "NYR-1",
+    "name": "Igor Shesterkin",
+    "team": "NYR",
+    "position": "G",
+    "number": 31,
+    "stats": {
+      "gaa": 2.48,
+      "sv_pct": 0.916,
+      "shutouts": 3
+    }
+  },
+  "NYR-2": {
+    "id": "NYR-2",
+    "name": "Artemi Panarin",
+    "team": "NYR",
+    "position": "LW",
+    "number": 10,
+    "stats": {
+      "goals": 32,
+      "assists": 47,
+      "points": 79
+    }
+  },
+  "NYR-3": {
+    "id": "NYR-3",
+    "name": "Mika Zibanejad",
+    "team": "NYR",
+    "position": "C",
+    "number": 93,
+    "stats": {
+      "goals": 28,
+      "assists": 39,
+      "points": 67
+    }
+  },
+  "NYR-4": {
+    "id": "NYR-4",
+    "name": "Adam Fox",
+    "team": "NYR",
+    "position": "D",
+    "number": 23,
+    "stats": {
+      "goals": 11,
+      "assists": 54,
+      "points": 65
+    }
+  },
+  "NYR-5": {
+    "id": "NYR-5",
+    "name": "Chris Kreider",
+    "team": "NYR",
+    "position": "LW",
+    "number": 20,
+    "stats": {
+      "goals": 36,
+      "assists": 21,
+      "points": 57
+    }
+  },
+  "BOS-1": {
+    "id": "BOS-1",
+    "name": "Jeremy Swayman",
+    "team": "BOS",
+    "position": "G",
+    "number": 1,
+    "stats": {
+      "gaa": 2.32,
+      "sv_pct": 0.921,
+      "shutouts": 4
+    }
+  },
+  "BOS-2": {
+    "id": "BOS-2",
+    "name": "David Pastrnak",
+    "team": "BOS",
+    "position": "RW",
+    "number": 88,
+    "stats": {
+      "goals": 43,
+      "assists": 38,
+      "points": 81
+    }
+  },
+  "BOS-3": {
+    "id": "BOS-3",
+    "name": "Brad Marchand",
+    "team": "BOS",
+    "position": "LW",
+    "number": 63,
+    "stats": {
+      "goals": 26,
+      "assists": 42,
+      "points": 68
+    }
+  },
+  "BOS-4": {
+    "id": "BOS-4",
+    "name": "Charlie McAvoy",
+    "team": "BOS",
+    "position": "D",
+    "number": 73,
+    "stats": {
+      "goals": 8,
+      "assists": 42,
+      "points": 50
+    }
+  },
+  "BOS-5": {
+    "id": "BOS-5",
+    "name": "Hampus Lindholm",
+    "team": "BOS",
+    "position": "D",
+    "number": 27,
+    "stats": {
+      "goals": 9,
+      "assists": 28,
+      "points": 37
+    }
+  },
+  "TOR-1": {
+    "id": "TOR-1",
+    "name": "Auston Matthews",
+    "team": "TOR",
+    "position": "C",
+    "number": 34,
+    "stats": {
+      "goals": 51,
+      "assists": 27,
+      "points": 78
+    }
+  },
+  "TOR-2": {
+    "id": "TOR-2",
+    "name": "Mitch Marner",
+    "team": "TOR",
+    "position": "RW",
+    "number": 16,
+    "stats": {
+      "goals": 27,
+      "assists": 53,
+      "points": 80
+    }
+  },
+  "TOR-3": {
+    "id": "TOR-3",
+    "name": "William Nylander",
+    "team": "TOR",
+    "position": "RW",
+    "number": 88,
+    "stats": {
+      "goals": 33,
+      "assists": 39,
+      "points": 72
+    }
+  },
+  "TOR-4": {
+    "id": "TOR-4",
+    "name": "John Tavares",
+    "team": "TOR",
+    "position": "C",
+    "number": 91,
+    "stats": {
+      "goals": 29,
+      "assists": 38,
+      "points": 67
+    }
+  },
+  "TOR-5": {
+    "id": "TOR-5",
+    "name": "Joseph Woll",
+    "team": "TOR",
+    "position": "G",
+    "number": 60,
+    "stats": {
+      "gaa": 2.65,
+      "sv_pct": 0.912,
+      "shutouts": 1
+    }
+  },
+  "MTL-1": {
+    "id": "MTL-1",
+    "name": "Cole Caufield",
+    "team": "MTL",
+    "position": "RW",
+    "number": 22,
+    "stats": {
+      "goals": 26,
+      "assists": 20,
+      "points": 46
+    }
+  },
+  "MTL-2": {
+    "id": "MTL-2",
+    "name": "Nick Suzuki",
+    "team": "MTL",
+    "position": "C",
+    "number": 14,
+    "stats": {
+      "goals": 22,
+      "assists": 34,
+      "points": 56
+    }
+  },
+  "MTL-3": {
+    "id": "MTL-3",
+    "name": "Mike Matheson",
+    "team": "MTL",
+    "position": "D",
+    "number": 8,
+    "stats": {
+      "goals": 8,
+      "assists": 31,
+      "points": 39
+    }
+  },
+  "MTL-4": {
+    "id": "MTL-4",
+    "name": "Sam Montembeault",
+    "team": "MTL",
+    "position": "G",
+    "number": 35,
+    "stats": {
+      "gaa": 3.05,
+      "sv_pct": 0.904,
+      "shutouts": 1
+    }
+  },
+  "MTL-5": {
+    "id": "MTL-5",
+    "name": "Kirby Dach",
+    "team": "MTL",
+    "position": "C",
+    "number": 77,
+    "stats": {
+      "goals": 14,
+      "assists": 24,
+      "points": 38
+    }
+  },
+  "EDM-1": {
+    "id": "EDM-1",
+    "name": "Connor McDavid",
+    "team": "EDM",
+    "position": "C",
+    "number": 97,
+    "stats": {
+      "goals": 42,
+      "assists": 66,
+      "points": 108
+    }
+  },
+  "EDM-2": {
+    "id": "EDM-2",
+    "name": "Leon Draisaitl",
+    "team": "EDM",
+    "position": "C",
+    "number": 29,
+    "stats": {
+      "goals": 38,
+      "assists": 58,
+      "points": 96
+    }
+  },
+  "EDM-3": {
+    "id": "EDM-3",
+    "name": "Zach Hyman",
+    "team": "EDM",
+    "position": "LW",
+    "number": 18,
+    "stats": {
+      "goals": 33,
+      "assists": 31,
+      "points": 64
+    }
+  },
+  "EDM-4": {
+    "id": "EDM-4",
+    "name": "Evan Bouchard",
+    "team": "EDM",
+    "position": "D",
+    "number": 2,
+    "stats": {
+      "goals": 12,
+      "assists": 35,
+      "points": 47
+    }
+  },
+  "EDM-5": {
+    "id": "EDM-5",
+    "name": "Stuart Skinner",
+    "team": "EDM",
+    "position": "G",
+    "number": 74,
+    "stats": {
+      "gaa": 2.68,
+      "sv_pct": 0.908,
+      "shutouts": 2
+    }
+  },
+  "CGY-1": {
+    "id": "CGY-1",
+    "name": "Jacob Markstrom",
+    "team": "CGY",
+    "position": "G",
+    "number": 25,
+    "stats": {
+      "gaa": 2.75,
+      "sv_pct": 0.911,
+      "shutouts": 2
+    }
+  },
+  "CGY-2": {
+    "id": "CGY-2",
+    "name": "Nazem Kadri",
+    "team": "CGY",
+    "position": "C",
+    "number": 91,
+    "stats": {
+      "goals": 24,
+      "assists": 37,
+      "points": 61
+    }
+  },
+  "CGY-3": {
+    "id": "CGY-3",
+    "name": "Elias Lindholm",
+    "team": "CGY",
+    "position": "C",
+    "number": 28,
+    "stats": {
+      "goals": 22,
+      "assists": 28,
+      "points": 50
+    }
+  },
+  "CGY-4": {
+    "id": "CGY-4",
+    "name": "Rasmus Andersson",
+    "team": "CGY",
+    "position": "D",
+    "number": 4,
+    "stats": {
+      "goals": 10,
+      "assists": 36,
+      "points": 46
+    }
+  },
+  "CGY-5": {
+    "id": "CGY-5",
+    "name": "Blake Coleman",
+    "team": "CGY",
+    "position": "C",
+    "number": 20,
+    "stats": {
+      "goals": 23,
+      "assists": 19,
+      "points": 42
+    }
+  }
+}

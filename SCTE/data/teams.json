@@ -1,0 +1,38 @@
+{
+  "NYR": {
+    "id": "NYR",
+    "name": "New York Rangers",
+    "conference": "Eastern",
+    "division": "Metropolitan"
+  },
+  "BOS": {
+    "id": "BOS",
+    "name": "Boston Bruins",
+    "conference": "Eastern",
+    "division": "Atlantic"
+  },
+  "TOR": {
+    "id": "TOR",
+    "name": "Toronto Maple Leafs",
+    "conference": "Eastern",
+    "division": "Atlantic"
+  },
+  "MTL": {
+    "id": "MTL",
+    "name": "Montreal Canadiens",
+    "conference": "Eastern",
+    "division": "Atlantic"
+  },
+  "EDM": {
+    "id": "EDM",
+    "name": "Edmonton Oilers",
+    "conference": "Western",
+    "division": "Pacific"
+  },
+  "CGY": {
+    "id": "CGY",
+    "name": "Calgary Flames",
+    "conference": "Western",
+    "division": "Pacific"
+  }
+}
